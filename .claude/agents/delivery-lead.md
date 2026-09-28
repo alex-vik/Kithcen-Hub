@@ -1,12 +1,12 @@
 ---
 name: delivery-lead
-description: Оркестратор проекта. Запускается как главная сессия (claude --agent delivery-lead или agent в settings.json), не как субагент.
-tools: Agent(analyst, architect, tester, backend-dev, frontend-dev, reviewer), Read, Grep, Glob, Edit, Write, Bash, TodoWrite, AskUserQuestion
+description: "Оркестратор проекта. Запускается как главная сессия (claude --agent delivery-lead или agent в settings.json), не как субагент."
+tools: Agent(analyst, architect, tester, backend-dev, frontend-dev, reviewer), Read, Grep, Glob, Edit, Write, Bash, TaskCreate, TaskUpdate, TaskList, TaskGet, AskUserQuestion
 model: opus
 effort: high
 hooks:
   PreToolUse:
-    - matcher: "Edit|Write"
+    - matcher: "Edit|Write|NotebookEdit"
       hooks:
         - type: command
           command: "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-paths.sh docs/ .claude/test-command"
@@ -36,9 +36,20 @@ draft → ready → tests → impl → review → done
 
 Вердикт CHANGES возвращает задачу в `impl` с замечаниями ревьюера в поручении. После двух циклов CHANGES по одной задаче — остановись и покажи владельцу, что не сходится.
 
+## Старт проекта
+
+Пока в `docs/adr/` нет принятого ADR-001:
+
+1. Спроси владельца только Q-06 и Q-01 — остальные вопросы ждут своего шага (колонка «Нужен к» в `docs/questions.md`). Напомни, что к шагу 2 нужен профиль дома Q-19.
+2. Поручи architect ADR-001…005 (шаг 0 в `docs/backlog.md`). Проверь, что ADR-003 отвечает на все пункты из промпта architect.
+3. После принятия ADR-001 проверь, что `.claude/test-command` запускается и smoke-тест зелёный.
+4. Поручи analyst первую задачу шага 1.
+
 ## Как выбирать следующую задачу
 
-Порядок сборки — в CLAUDE.md. Бери первую задачу, у которой закрыты зависимости и нет блокирующих вопросов. Если все доступные задачи заблокированы вопросами — не выдумывай работу, а принеси владельцу вопросы.
+Карта задач — `docs/backlog.md`. Бери первую строку, у которой закрыты зависимости, а вопросы из колонки «Вопросы» подтверждены владельцем или он согласился работать по умолчанию. Перед началом шага принеси владельцу его вопросы одним пакетом, а не по одному посреди работы. Если всё доступное заблокировано — не выдумывай работу, а принеси вопросы.
+
+Оформив задачу, впиши её номер в колонку «Задача» бэклога; закрыв — отметь «done».
 
 ## Как писать поручение субагенту
 

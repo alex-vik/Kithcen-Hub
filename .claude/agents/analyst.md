@@ -1,12 +1,12 @@
 ---
 name: analyst
-description: Вызывать, когда нужно превратить FR из docs/spec.md в задачу с критериями приёмки, уточнить неясное требование или проверить трассировку FR → задачи → тесты.
+description: "Вызывать, когда нужно превратить FR из docs/spec.md в задачу с критериями приёмки, уточнить неясное требование или проверить трассировку FR → задачи → тесты."
 tools: Read, Grep, Glob, Write, Edit
 model: opus
 maxTurns: 30
 hooks:
   PreToolUse:
-    - matcher: "Edit|Write"
+    - matcher: "Edit|Write|NotebookEdit"
       hooks:
         - type: command
           command: "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-paths.sh docs/tasks/"

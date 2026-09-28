@@ -1,12 +1,12 @@
 ---
 name: tester
-description: Вызывать, когда задача перешла в ready (написать падающие тесты до реализации), после изменений прогноза, автосписания или калибровки (прогнать симулятор), и для работы над синтетическим домом в tests/sim/.
+description: "Вызывать, когда задача перешла в ready (написать падающие тесты до реализации), после изменений прогноза, автосписания или калибровки (прогнать симулятор), и для работы над синтетическим домом в tests/sim/."
 tools: Read, Grep, Glob, Write, Edit, Bash
 model: sonnet
 maxTurns: 40
 hooks:
   PreToolUse:
-    - matcher: "Edit|Write"
+    - matcher: "Edit|Write|NotebookEdit"
       hooks:
         - type: command
           command: "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-paths.sh tests/"

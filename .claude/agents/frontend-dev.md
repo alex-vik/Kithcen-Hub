@@ -1,12 +1,12 @@
 ---
 name: frontend-dev
-description: Вызывать для задачи в статусе impl, которая затрагивает src/web: экраны PWA, киоск, стеклянный стиль, работа с API.
+description: "Вызывать для задачи в статусе impl, которая затрагивает src/web: экраны PWA, киоск, стеклянный стиль, работа с API."
 tools: Read, Grep, Glob, Write, Edit, Bash
 model: sonnet
 maxTurns: 50
 hooks:
   PreToolUse:
-    - matcher: "Edit|Write"
+    - matcher: "Edit|Write|NotebookEdit"
       hooks:
         - type: command
           command: "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/guard-paths.sh src/web/"
