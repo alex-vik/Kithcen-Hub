@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Пересмотр перед закупкой</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'Inter',ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;font-weight:350;letter-spacing:-0.02em;font-feature-settings:"cv11" 1,"ss01" 1;background:#e3e6eb;color:#0f1012}
+a{color:#0071e3}a:hover{color:#005bb8}
+button{font:inherit;letter-spacing:inherit}
+</style>
+</helmet>
+<div style="position: relative; isolation: isolate; width: 390px; height: 1700px; overflow: hidden; background: #e3e6eb; color: #0f1012; font-family: 'Inter', ui-sans-serif, system-ui, sans-serif; font-weight: 350; letter-spacing: -0.02em; box-sizing: border-box">
+<div aria-hidden="true" style="position: absolute; z-index: -1; right: -130px; top: -6%; width: 340px; height: 340px; border-radius: 9999px; background: rgba(0,113,227,0.28); filter: blur(60px); pointer-events: none"></div>
+<div aria-hidden="true" style="position: absolute; z-index: -1; left: -150px; top: 22%; width: 340px; height: 340px; border-radius: 9999px; background: rgba(0,113,227,0.14); filter: blur(70px); pointer-events: none"></div>
+<div aria-hidden="true" style="position: absolute; z-index: -1; right: -120px; top: 48%; width: 300px; height: 300px; border-radius: 9999px; background: rgba(0,113,227,0.18); filter: blur(70px); pointer-events: none"></div>
+<div aria-hidden="true" style="position: absolute; z-index: -1; left: -110px; top: 74%; width: 320px; height: 320px; border-radius: 9999px; background: rgba(0,113,227,0.12); filter: blur(70px); pointer-events: none"></div>
+<div style="display: flex; flex-direction: column; gap: 22px; padding: 14px 20px 120px; box-sizing: border-box">
+
+<div style="display: flex; align-items: center; justify-content: flex-end; height: 48px">
+<a href="Bell.dc.html" aria-label="Открытые дела: 4" style="position: relative; width: 44px; height: 44px; border-radius: 9999px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.16); backdrop-filter: blur(24px) saturate(1.8); -webkit-backdrop-filter: blur(24px) saturate(1.8); border: 1px solid rgba(255,255,255,0.6); box-shadow: inset 1.5px 1.5px 1px rgba(255,255,255,0.85), inset -1px -1px 1px rgba(255,255,255,0.35), inset 0 0 14px rgba(255,255,255,0.25), 0 8px 18px -12px rgba(15,16,18,0.35); color: #0f1012">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0112 0c0 7 3 8 3 8H3s3-1 3-8"></path><path d="M10 20a2 2 0 004 0"></path></svg>
+<span style="position: absolute; top: 10px; right: 11px; width: 7px; height: 7px; border-radius: 9999px; background: #0f1012"></span>
+</a>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span style="font-size: 13px; color: #4a4d52">Закупка в субботу, 3 октября</span>
+<h1 style="margin: 0; font-size: 27px; font-weight: 350; line-height: 1.2; letter-spacing: -0.02em">Пересмотр</h1>
+</div>
+
+<div role="group" aria-label="Режим пересмотра" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 9999px; background: rgba(255,255,255,0.16); backdrop-filter: blur(24px) saturate(1.8); -webkit-backdrop-filter: blur(24px) saturate(1.8); border: 1px solid rgba(255,255,255,0.6); box-shadow: inset 1.5px 1.5px 1px rgba(255,255,255,0.85), inset -1px -1px 1px rgba(255,255,255,0.35), inset 0 0 14px rgba(255,255,255,0.25)">
+<button type="button" onClick="{{toBase}}" aria-pressed="{{baseOn}}" style="{{baseStyle}}">Базовый</button>
+<button type="button" onClick="{{toDetail}}" aria-pressed="{{detailOn}}" style="{{detailStyle}}">Детальный</button>
+</div>
+
+<sc-if value="{{isBase}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; flex-direction: column; gap: 14px">
+<p style="margin: 0; padding: 0 22px; font-size: 14px; color: #4a4d52; line-height: 1.4">Спорных позиций: 6. Остальное система решила сама.</p>
+<sc-for list="{{cards}}" as="c" hint-placeholder-count="6">
+<div style="display: flex; flex-direction: column; gap: 16px; padding: 22px; background: rgba(255,255,255,0.2); backdrop-filter: blur(40px) saturate(1.8); -webkit-backdrop-filter: blur(40px) saturate(1.8); border: 0.5px solid rgba(255,255,255,0.9); box-shadow: inset 0 0 0 0.5px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,1); border-radius: 36px">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span style="font-size: 18px; line-height: 1.25">{{c.q}}</span>
+<span style="font-size: 14px; color: #4a4d52; line-height: 1.4">{{c.why}}</span>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 6px">
+<sc-for list="{{c.opts}}" as="o" hint-placeholder-count="3">
+<button type="button" onClick="{{o.pick}}" aria-pressed="{{o.on}}" style="{{o.style}}">{{o.label}}</button>
+</sc-for>
+</div>
+</div>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{isDetail}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; padding: 8px 22px; background: rgba(255,255,255,0.2); backdrop-filter: blur(40px) saturate(1.8); -webkit-backdrop-filter: blur(40px) saturate(1.8); border: 0.5px solid rgba(255,255,255,0.9); box-shadow: inset 0 0 0 0.5px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,1); border-radius: 36px">
+<sc-for list="{{lines}}" as="l" hint-placeholder-count="10">
+<div style="{{l.row}}">
+<div style="display: flex; align-items: center; gap: 12px">
+<span style="{{l.dot}}"></span>
+<span style="font-size: 16px; flex-grow: 1">{{l.name}}</span>
+<span style="font-size: 16px; font-variant-numeric: tabular-nums">{{l.qty}}</span>
+</div>
+<span style="font-size: 13px; color: #4a4d52; line-height: 1.4; padding-left: 22px">{{l.why}}</span>
+</div>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{notDone}}" hint-placeholder-val="{{ true }}">
+<button type="button" onClick="{{finish}}" style="display: flex; align-items: center; gap: 14px; height: 64px; padding: 0 24px 0 10px; box-sizing: border-box; border-radius: 9999px; color: #0f1012; font-size: 17px; font-weight: 500; cursor: pointer; text-align: left; background: rgba(255,255,255,0.16); backdrop-filter: blur(24px) saturate(1.8); -webkit-backdrop-filter: blur(24px) saturate(1.8); border: 1px solid rgba(255,255,255,0.6); box-shadow: inset 1.5px 1.5px 1px rgba(255,255,255,0.85), inset -1px -1px 1px rgba(255,255,255,0.35), inset 0 0 14px rgba(255,255,255,0.25), 0 8px 18px -12px rgba(15,16,18,0.35)"><span style="width: 44px; height: 44px; flex-shrink: 0; border-radius: 9999px; background: #fdfdfd; color: #0071e3; display: flex; align-items: center; justify-content: center; box-shadow: 0 3px 8px -3px rgba(15,16,18,0.35)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg></span>Список готов</button>
+</sc-if>
+<sc-if value="{{isDone}}" hint-placeholder-val="{{ false }}">
+<div role="status" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 64px; padding: 0 22px; box-sizing: border-box; border-radius: 36px; background: rgba(255,255,255,0.2); backdrop-filter: blur(40px) saturate(1.8); -webkit-backdrop-filter: blur(40px) saturate(1.8); border: 0.5px solid rgba(255,255,255,0.9); box-shadow: inset 0 0 0 0.5px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,1)">
+<span style="font-size: 16px">Список сформирован: 10 позиций</span>
+<a href="List.dc.html" style="display: inline-flex; align-items: center; gap: 4px; min-height: 44px; color: #0071e3; text-decoration: none; font-size: 16px">Открыть
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5l7 7-7 7"></path></svg>
+</a>
+</div>
+</sc-if>
+</div>
+
+<nav aria-label="Разделы" style="position: absolute; left: 20px; right: 20px; bottom: 20px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 6px; box-sizing: border-box; border-radius: 9999px; background: rgba(255,255,255,0.16); backdrop-filter: blur(24px) saturate(1.8); -webkit-backdrop-filter: blur(24px) saturate(1.8); border: 1px solid rgba(255,255,255,0.6); box-shadow: inset 1.5px 1.5px 1px rgba(255,255,255,0.85), inset -1px -1px 1px rgba(255,255,255,0.35), inset 0 0 14px rgba(255,255,255,0.25), 0 8px 18px -12px rgba(15,16,18,0.35)">
+<a href="Review.dc.html" aria-current="page" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; height: 52px; border-radius: 9999px; background: #fdfdfd; color: #0071e3; text-decoration: none; font-size: 12px; font-weight: 500; box-shadow: 0 4px 10px -6px rgba(15,16,18,0.35)">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"></rect><path d="M9 4h6v3H9z"></path><path d="M9 13l2 2 4-4"></path></svg>
+Пересмотр</a>
+<a href="List.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; height: 52px; border-radius: 9999px; color: #4a4d52; text-decoration: none; font-size: 12px">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 6h10M10 12h10M10 18h10"></path><path d="M4 6l1.2 1.2L7.5 5M4 12l1.2 1.2L7.5 11"></path><circle cx="5.5" cy="18" r="1"></circle></svg>
+Список</a>
+<a href="Inventory.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; height: 52px; border-radius: 9999px; color: #4a4d52; text-decoration: none; font-size: 12px">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7l9-4 9 4-9 4-9-4z"></path><path d="M3 7v10l9 4 9-4V7"></path><path d="M12 11v10"></path></svg>
+Дома</a>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1700}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.state || {};
+    const mode = s.mode || 'base';
+    const answers = s.answers || {};
+    const seg = (on) => 'height: 44px; border-radius: 9999px; font-size: 15px; cursor: pointer; ' + (on ? 'background: #fdfdfd; color: #0071e3; font-weight: 500; border: 0.5px solid #fdfdfd; box-shadow: 0 4px 10px -6px rgba(15,16,18,0.35)' : 'background: transparent; color: #4a4d52; border: 0.5px solid transparent');
+    const chip = (on) => 'height: 44px; padding: 0 18px; border-radius: 9999px; font-size: 15px; cursor: pointer; ' + (on ? 'background: #fdfdfd; color: #0071e3; font-weight: 500; border: 1px solid #fdfdfd; box-shadow: 0 4px 10px -6px rgba(15,16,18,0.35)' : 'color: #0f1012; background: rgba(255,255,255,0.16); backdrop-filter: blur(24px) saturate(1.8); -webkit-backdrop-filter: blur(24px) saturate(1.8); border: 1px solid rgba(255,255,255,0.6); box-shadow: inset 1.5px 1.5px 1px rgba(255,255,255,0.85), inset -1px -1px 1px rgba(255,255,255,0.35), inset 0 0 14px rgba(255,255,255,0.25)');
+    const raw = [
+      { id: 'buck', q: 'Сколько осталось гречки?', why: 'Последняя отметка три недели назад', opts: ['Много', 'Мало', 'Кончается'] },
+      { id: 'oil', q: 'Сколько осталось оливкового масла?', why: 'Бутылка открыта давно, расход не отмечался', opts: ['Много', 'Мало', 'Кончается'] },
+      { id: 'sour', q: 'Сметану вычёркиваете третью неделю подряд', why: 'Похоже, её стали есть реже', opts: ['Больше не покупаю', 'Понизить норму', 'Оставить'] },
+      { id: 'pan', q: 'Блины во вторник не отмечены', why: 'Были в меню на неделю', opts: ['Готовил', 'Не готовил'] },
+      { id: 'draft', q: 'Новая позиция из чека: «Varškės sūrelis»', why: 'Не нашлась в каталоге, записана черновиком', opts: ['Создать', 'Объединить', 'Удалить'] },
+      { id: 'oat', q: 'Овсяное молоко: норма 1 л в неделю', why: 'Рассчитано по истории за 4 недели', opts: ['Принять', 'Поправить'] }
+    ];
+    const cards = raw.map((c) => ({
+      q: c.q,
+      why: c.why,
+      opts: c.opts.map((label) => {
+        const on = answers[c.id] === label;
+        return {
+          label: label,
+          on: on ? 'true' : 'false',
+          style: chip(on),
+          pick: () => this.setState({ answers: Object.assign({}, answers, { [c.id]: label }) })
+        };
+      })
+    }));
+    const dot = (c) => 'width: 10px; height: 10px; border-radius: 9999px; flex-shrink: 0; background: ' + c;
+    const R = dot('#C8372D'), A = dot('#E6A23C'), P = dot('#8f8f8f');
+    const rawLines = [
+      { name: 'Молоко', qty: '2 × 1 л', why: 'Кончится завтра. Расход около литра за два дня', dot: R },
+      { name: 'Кофе в зёрнах', qty: '1 пачка', why: 'Хватит на 3 дня, до закупки не дотянет', dot: A },
+      { name: 'Яйца', qty: '10 шт', why: 'Около 4 шт, плюс 3 шт на блины по меню', dot: A },
+      { name: 'Гречка', qty: '1 пачка', why: 'Не нашли на прошлой неделе, перенесено', dot: A },
+      { name: 'Мука', qty: '1 кг', why: 'По меню: блины во вторник', dot: P },
+      { name: 'Сливочное масло', qty: '1 пачка', why: 'Хватит впритык, плюс запас на два дня', dot: A },
+      { name: 'Сыр', qty: '1 шт', why: 'Кончится к пятнице', dot: A },
+      { name: 'Хлеб', qty: '1 батон', why: 'Покупается каждую неделю', dot: A },
+      { name: 'Корм', qty: '12 пакетиков', why: 'На неделю плюс запас', dot: A },
+      { name: 'Томаты в собственном соку', qty: '2 банки', why: 'По меню: паста в четверг', dot: P }
+    ];
+    const lines = rawLines.map((l, i) => Object.assign({}, l, {
+      row: 'display: flex; flex-direction: column; gap: 4px; padding: 14px 0; ' + (i < rawLines.length - 1 ? 'border-bottom: 0.5px solid rgba(0,0,0,0.08)' : '')
+    }));
+    return {
+      isBase: mode === 'base',
+      isDetail: mode === 'detail',
+      baseOn: mode === 'base' ? 'true' : 'false',
+      detailOn: mode === 'detail' ? 'true' : 'false',
+      baseStyle: seg(mode === 'base'),
+      detailStyle: seg(mode === 'detail'),
+      toBase: () => this.setState({ mode: 'base' }),
+      toDetail: () => this.setState({ mode: 'detail' }),
+      cards: cards,
+      lines: lines,
+      isDone: !!s.done,
+      notDone: !s.done,
+      finish: () => this.setState({ done: true })
+    };
+  }
+}
+</script>
+</body>
+</html>

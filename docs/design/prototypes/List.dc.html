@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Список покупок</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'Inter',ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;font-weight:350;letter-spacing:-0.02em;font-feature-settings:"cv11" 1,"ss01" 1;background:#e3e6eb;color:#0f1012}
+a{color:#0071e3}a:hover{color:#005bb8}
+button{font:inherit;letter-spacing:inherit}
+</style>
+</helmet>
+<div style="position: relative; isolation: isolate; width: 390px; height: 1240px; overflow: hidden; background: #e3e6eb; color: #0f1012; font-family: 'Inter', ui-sans-serif, system-ui, sans-serif; font-weight: 350; letter-spacing: -0.02em; box-sizing: border-box">
+<div aria-hidden="true" style="position: absolute; z-index: -1; right: -130px; top: -6%; width: 340px; height: 340px; border-radius: 9999px; background: rgba(0,113,227,0.28); filter: blur(60px); pointer-events: none"></div>
+<div aria-hidden="true" style="position: absolute; z-index: -1; left: -150px; top: 22%; width: 340px; height: 340px; border-radius: 9999px; background: rgba(0,113,227,0.14); filter: blur(70px); pointer-events: none"></div>
+<div aria-hidden="true" style="position: absolute; z-index: -1; right: -120px; top: 48%; width: 300px; height: 300px; border-radius: 9999px; background: rgba(0,113,227,0.18); filter: blur(70px); pointer-events: none"></div>
+<div aria-hidden="true" style="position: absolute; z-index: -1; left: -110px; top: 74%; width: 320px; height: 320px; border-radius: 9999px; background: rgba(0,113,227,0.12); filter: blur(70px); pointer-events: none"></div>
+<div style="display: flex; flex-direction: column; gap: 22px; padding: 14px 20px 120px; box-sizing: border-box">
+
+<div style="display: flex; align-items: center; justify-content: flex-end; height: 48px">
+<a href="Bell.dc.html" aria-label="Открытые дела: 4" style="position: relative; width: 44px; height: 44px; border-radius: 9999px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.16); backdrop-filter: blur(24px) saturate(1.8); -webkit-backdrop-filter: blur(24px) saturate(1.8); border: 1px solid rgba(255,255,255,0.6); box-shadow: inset 1.5px 1.5px 1px rgba(255,255,255,0.85), inset -1px -1px 1px rgba(255,255,255,0.35), inset 0 0 14px rgba(255,255,255,0.25), 0 8px 18px -12px rgba(15,16,18,0.35); color: #0f1012">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0112 0c0 7 3 8 3 8H3s3-1 3-8"></path><path d="M10 20a2 2 0 004 0"></path></svg>
+<span style="position: absolute; top: 10px; right: 11px; width: 7px; height: 7px; border-radius: 9999px; background: #0f1012"></span>
+</a>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span style="font-size: 13px; color: #4a4d52">Взято {{taken}} из {{total}}</span>
+<h1 style="margin: 0; font-size: 27px; font-weight: 350; line-height: 1.2; letter-spacing: -0.02em">Список покупок</h1>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div style="height: 4px; border-radius: 9999px; background: rgba(12,13,15,0.08); overflow: hidden">
+<div style="{{barStyle}}"></div>
+</div>
+<p style="margin: 0; font-size: 13px; color: #4a4d52; line-height: 1.4">Нажмите, если взяли как в списке. Удерживайте, чтобы изменить количество.</p>
+</div>
+
+<sc-for list="{{groups}}" as="g" hint-placeholder-count="3">
+<section style="display: flex; flex-direction: column; gap: 8px">
+<h2 style="margin: 0; padding: 0 22px; font-size: 12px; font-weight: 400; color: #4a4d52">{{g.title}}</h2>
+<div style="display: flex; flex-direction: column; padding: 4px 22px; background: rgba(255,255,255,0.2); backdrop-filter: blur(40px) saturate(1.8); -webkit-backdrop-filter: blur(40px) saturate(1.8); border: 0.5px solid rgba(255,255,255,0.9); box-shadow: inset 0 0 0 0.5px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,1); border-radius: 36px">
+<sc-for list="{{g.items}}" as="it" hint-placeholder-count="3">
+<button type="button" onClick="{{it.toggle}}" aria-pressed="{{it.pressed}}" style="{{it.row}}">
+<span style="{{it.box}}">
+<sc-if value="{{it.checked}}" hint-placeholder-val="{{ false }}">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg>
+</sc-if>
+</span>
+<span style="display: flex; flex-direction: column; align-items: flex-start; gap: 4px; flex-grow: 1; min-width: 0">
+<span style="{{it.nameStyle}}">{{it.name}}</span>
+<sc-if value="{{it.hasNote}}" hint-placeholder-val="{{ false }}">
+<span style="padding: 1px 9px; border-radius: 9999px; border: 0.5px solid #0071e3; color: #0071e3; font-size: 12px">{{it.note}}</span>
+</sc-if>
+</span>
+<span style="{{it.qtyStyle}}">{{it.qty}}</span>
+</button>
+</sc-for>
+</div>
+</section>
+</sc-for>
+
+<div style="display: flex; flex-direction: column; gap: 10px">
+<button type="button" style="display: flex; align-items: center; gap: 14px; height: 64px; padding: 0 24px 0 10px; box-sizing: border-box; border-radius: 9999px; color: #0f1012; font-size: 17px; font-weight: 500; cursor: pointer; text-align: left; background: rgba(255,255,255,0.16); backdrop-filter: blur(24px) saturate(1.8); -webkit-backdrop-filter: blur(24px) saturate(1.8); border: 1px solid rgba(255,255,255,0.6); box-shadow: inset 1.5px 1.5px 1px rgba(255,255,255,0.85), inset -1px -1px 1px rgba(255,255,255,0.35), inset 0 0 14px rgba(255,255,255,0.25), 0 8px 18px -12px rgba(15,16,18,0.35)"><span style="width: 44px; height: 44px; flex-shrink: 0; border-radius: 9999px; background: #fdfdfd; color: #0071e3; display: flex; align-items: center; justify-content: center; box-shadow: 0 3px 8px -3px rgba(15,16,18,0.35)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg></span>Закупка завершена</button>
+<p style="margin: 0; font-size: 13px; color: #4a4d52; line-height: 1.4; text-align: center">Не найденное останется в списке на следующую неделю</p>
+</div>
+</div>
+
+<nav aria-label="Разделы" style="position: absolute; left: 20px; right: 20px; bottom: 20px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 6px; box-sizing: border-box; border-radius: 9999px; background: rgba(255,255,255,0.16); backdrop-filter: blur(24px) saturate(1.8); -webkit-backdrop-filter: blur(24px) saturate(1.8); border: 1px solid rgba(255,255,255,0.6); box-shadow: inset 1.5px 1.5px 1px rgba(255,255,255,0.85), inset -1px -1px 1px rgba(255,255,255,0.35), inset 0 0 14px rgba(255,255,255,0.25), 0 8px 18px -12px rgba(15,16,18,0.35)">
+<a href="Review.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; height: 52px; border-radius: 9999px; color: #4a4d52; text-decoration: none; font-size: 12px">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"></rect><path d="M9 4h6v3H9z"></path><path d="M9 13l2 2 4-4"></path></svg>
+Пересмотр</a>
+<a href="List.dc.html" aria-current="page" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; height: 52px; border-radius: 9999px; background: #fdfdfd; color: #0071e3; text-decoration: none; font-size: 12px; font-weight: 500; box-shadow: 0 4px 10px -6px rgba(15,16,18,0.35)">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 6h10M10 12h10M10 18h10"></path><path d="M4 6l1.2 1.2L7.5 5M4 12l1.2 1.2L7.5 11"></path><circle cx="5.5" cy="18" r="1"></circle></svg>
+Список</a>
+<a href="Inventory.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; height: 52px; border-radius: 9999px; color: #4a4d52; text-decoration: none; font-size: 12px">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7l9-4 9 4-9 4-9-4z"></path><path d="M3 7v10l9 4 9-4V7"></path><path d="M12 11v10"></path></svg>
+Дома</a>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1240}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.state || {};
+    const done = s.done || { milk: true, bread: true, eggs: true };
+    const raw = [
+      { title: 'Молочное и яйца', items: [
+        { id: 'milk', name: 'Молоко', qty: '2 × 1 л' },
+        { id: 'eggs', name: 'Яйца', qty: '10 шт' },
+        { id: 'butter', name: 'Сливочное масло', qty: '1 пачка' },
+        { id: 'cheese', name: 'Сыр', qty: '1 шт' }
+      ] },
+      { title: 'Бакалея', items: [
+        { id: 'coffee', name: 'Кофе в зёрнах', qty: '1 пачка' },
+        { id: 'buck', name: 'Гречка', qty: '1 пачка', note: 'С прошлой недели' },
+        { id: 'flour', name: 'Мука', qty: '1 кг', note: 'По меню: блины' },
+        { id: 'tom', name: 'Томаты в собственном соку', qty: '2 банки', note: 'По меню: паста' }
+      ] },
+      { title: 'Хлеб и прочее', items: [
+        { id: 'bread', name: 'Хлеб', qty: '1 батон' },
+        { id: 'feed', name: 'Корм', qty: '12 пакетиков' }
+      ] }
+    ];
+    let taken = 0, total = 0;
+    const groups = raw.map((g) => ({
+      title: g.title,
+      items: g.items.map((it, i) => {
+        const on = !!done[it.id];
+        total += 1; if (on) taken += 1;
+        const last = i === g.items.length - 1;
+        return {
+          name: it.name,
+          qty: it.qty,
+          note: it.note || '',
+          hasNote: !!it.note,
+          checked: on,
+          pressed: on ? 'true' : 'false',
+          row: 'display: flex; align-items: center; gap: 14px; min-height: 60px; padding: 8px 0; box-sizing: border-box; border: 0; background: transparent; color: #0f1012; text-align: left; cursor: pointer; ' + (last ? '' : 'border-bottom: 0.5px solid rgba(0,0,0,0.08)'),
+          box: 'width: 30px; height: 30px; flex-shrink: 0; border-radius: 9999px; display: flex; align-items: center; justify-content: center; box-sizing: border-box; ' + (on ? 'background: #fdfdfd; color: #0071e3; border: 0; box-shadow: 0 3px 8px -3px rgba(15,16,18,0.4)' : 'background: rgba(255,255,255,0.18); border: 1px solid rgba(255,255,255,0.7); box-shadow: inset 1px 1px 1px rgba(255,255,255,0.9), 0 0 0 0.5px rgba(15,16,18,0.2)'),
+          nameStyle: 'font-size: 16px; line-height: 1.25; ' + (on ? 'color: #8f8f8f; text-decoration: line-through' : 'color: #0f1012'),
+          qtyStyle: 'font-size: 15px; font-variant-numeric: tabular-nums; white-space: nowrap; ' + (on ? 'color: #8f8f8f' : 'color: #0f1012'),
+          toggle: () => this.setState({ done: Object.assign({}, done, { [it.id]: !on }) })
+        };
+      })
+    }));
+    return {
+      groups: groups,
+      taken: taken,
+      total: total,
+      barStyle: 'height: 100%; border-radius: 9999px; background: #0f1012; width: ' + Math.round(taken / total * 100) + '%'
+    };
+  }
+}
+</script>
+</body>
+</html>

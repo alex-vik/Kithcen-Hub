@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Домашний склад продуктов</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  --bg:#E6ECEF; --ink:#16242B; --muted:#5A6B73;
+  --glass:rgba(255,255,255,.52); --glass-edge:rgba(255,255,255,.75);
+  --red:#E4574B; --amber:#E9A93A; --green:#3FA877;
+  --orb1:#9FD4BD; --orb2:#F2C98A; --orb3:#AFC6E8;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#101A1F; --ink:#E7EEF1; --muted:#93A5AD;
+    --glass:rgba(30,44,51,.55); --glass-edge:rgba(255,255,255,.12);
+    --orb1:#1F5A45; --orb2:#6B4A1C; --orb3:#27406A;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#101A1F; --ink:#E7EEF1; --muted:#93A5AD;
+  --glass:rgba(30,44,51,.55); --glass-edge:rgba(255,255,255,.12);
+  --orb1:#1F5A45; --orb2:#6B4A1C; --orb3:#27406A;
+}
+*,*::before,*::after{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:"Onest",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  overflow:hidden; -webkit-font-smoothing:antialiased;
+}
+.orbs{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.orb{position:absolute;border-radius:50%;filter:blur(70px);opacity:.9;transition:transform 1.2s cubic-bezier(.2,.7,.2,1)}
+.o1{width:48vmax;height:48vmax;background:var(--orb1);left:-12vmax;top:-14vmax}
+.o2{width:40vmax;height:40vmax;background:var(--orb2);right:-10vmax;bottom:-16vmax}
+.o3{width:34vmax;height:34vmax;background:var(--orb3);right:18vmax;top:-10vmax}
+@media (prefers-reduced-motion:reduce){.orb,.slide{transition:none!important}}
+
+.deck{position:relative;z-index:1;height:100%}
+.slide{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  padding:clamp(16px,4vw,56px) clamp(14px,5vw,72px) 88px;
+  opacity:0;visibility:hidden;transition:opacity .45s ease,visibility .45s;
+  overflow-y:auto;
+}
+.slide.on{opacity:1;visibility:visible}
+.panel{
+  width:100%;max-width:1060px;
+  background:var(--glass);border:1px solid var(--glass-edge);border-radius:28px;
+  -webkit-backdrop-filter:blur(22px) saturate(1.3);backdrop-filter:blur(22px) saturate(1.3);
+  box-shadow:0 30px 60px -30px rgba(20,40,50,.35);
+  padding:clamp(22px,4vw,56px);margin:auto 0;
+}
+h1{font-size:clamp(34px,6.4vw,76px);font-weight:800;line-height:1.02;letter-spacing:-.035em;margin:0 0 .35em}
+h2{font-size:clamp(26px,4vw,46px);font-weight:800;line-height:1.08;letter-spacing:-.025em;margin:0 0 .6em}
+h3{font-size:clamp(17px,1.7vw,21px);font-weight:600;margin:0 0 .35em}
+p{font-size:clamp(15px,1.45vw,19px);line-height:1.55;margin:0 0 .8em;max-width:62ch;color:var(--ink)}
+.muted{color:var(--muted)}
+.lead{font-size:clamp(17px,1.9vw,24px);line-height:1.45;color:var(--muted);max-width:40ch}
+
+.grid{display:grid;gap:clamp(12px,1.6vw,20px)}
+.g2{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.g3{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.g4{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+.tile{background:rgba(255,255,255,.35);border:1px solid var(--glass-edge);border-radius:18px;padding:18px 20px}
+:root[data-theme="dark"] .tile{background:rgba(255,255,255,.04)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .tile{background:rgba(255,255,255,.04)}}
+.tile p{font-size:clamp(14px,1.25vw,16px);margin:0;color:var(--muted)}
+
+/* traffic light — the recurring signature */
+.light{display:inline-flex;gap:8px;padding:8px 10px;border-radius:999px;background:rgba(0,0,0,.06);vertical-align:middle}
+.light i{width:14px;height:14px;border-radius:50%;background:currentColor;opacity:.22;display:block}
+.light i:nth-child(1){color:var(--red)} .light i:nth-child(2){color:var(--amber)} .light i:nth-child(3){color:var(--green)}
+.light[data-on="r"] i:nth-child(1),.light[data-on="y"] i:nth-child(2),.light[data-on="g"] i:nth-child(3){opacity:1;box-shadow:0 0 12px currentColor}
+
+.status{display:flex;align-items:center;gap:16px;padding:16px 0;border-bottom:1px solid var(--glass-edge)}
+.status:last-child{border:0}
+.dot{flex:none;width:22px;height:22px;border-radius:50%}
+.status b{font-size:clamp(17px,1.7vw,21px);font-weight:600;min-width:9ch}
+.status span{color:var(--muted);font-size:clamp(14px,1.3vw,17px)}
+
+.kiosk{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:8px 0 22px}
+.kbtn{border-radius:22px;padding:clamp(24px,4vw,44px) 20px;text-align:center;font-weight:800;font-size:clamp(22px,3vw,34px);color:#fff}
+.kbtn small{display:block;font-weight:500;font-size:clamp(13px,1.2vw,15px);opacity:.85;margin-top:6px}
+.k-off{background:linear-gradient(160deg,#E86A5E,#C9463B)}
+.k-on{background:linear-gradient(160deg,#4FB786,#2F8E62)}
+
+.flow{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:6px}
+.chip{padding:10px 16px;border-radius:999px;background:rgba(255,255,255,.4);border:1px solid var(--glass-edge);font-weight:500;font-size:clamp(14px,1.3vw,16px)}
+:root[data-theme="dark"] .chip{background:rgba(255,255,255,.06)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .chip{background:rgba(255,255,255,.06)}}
+.arrow{color:var(--muted)}
+
+.strike{display:flex;flex-wrap:wrap;gap:10px}
+.strike span{padding:10px 16px;border-radius:12px;border:1px dashed var(--muted);color:var(--muted);text-decoration:line-through;text-decoration-thickness:1px;font-size:clamp(14px,1.3vw,16px)}
+
+.phase{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:start;padding:16px 0}
+.phase + .phase{border-top:1px solid var(--glass-edge)}
+.tag{font-weight:600;font-size:14px;padding:6px 12px;border-radius:999px;white-space:nowrap}
+.t1{background:rgba(63,168,119,.18);color:var(--green)}
+.t2{background:rgba(233,169,58,.2);color:#B57C14}
+
+.nav{
+  position:fixed;left:50%;transform:translateX(-50%);
+  bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:5;
+  display:flex;align-items:center;gap:6px;padding:6px;border-radius:999px;
+  background:var(--glass);border:1px solid var(--glass-edge);
+  -webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);
+}
+.nav button{
+  font:inherit;border:0;background:transparent;color:var(--ink);cursor:pointer;
+  width:44px;height:44px;border-radius:50%;font-size:20px;display:grid;place-items:center
+}
+.nav button:hover{background:rgba(127,127,127,.12)}
+.nav button:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+.count{font-variant-numeric:tabular-nums;font-weight:500;min-width:62px;text-align:center;font-size:15px;color:var(--muted)}
+.bar{position:fixed;left:0;top:env(safe-area-inset-top,0px);height:3px;background:var(--green);z-index:6;transition:width .45s ease}
+</style>
+</head>
+<body>
+<div class="orbs" aria-hidden="true"><div class="orb o1"></div><div class="orb o2"></div><div class="orb o3"></div></div>
+<div class="bar" id="bar"></div>
+
+<main class="deck" id="deck">
+
+<section class="slide">
+  <div class="panel">
+    <span class="light" data-on="g" aria-hidden="true"><i></i><i></i><i></i></span>
+    <h1 style="margin-top:.5em">Домашний склад продуктов</h1>
+    <p class="lead">Чтобы дома всегда было нужное количество нужных продуктов — и закупка складывалась сама.</p>
+    <p class="muted">Личное приложение для одного дома. Сводка решений по итогам брейншторма.</p>
+  </div>
+</section>
+
+<section class="slide">
+  <div class="panel">
+    <h2>Объём и фазы</h2>
+    <div class="phase"><span class="tag t1">Первая версия</span>
+      <p>Всё приложение целиком: учёт, киоск, приход, список покупок, пересмотр, рецепты и меню на неделю. Приоритеты в бэклоге — порядок сборки, а не граница выпуска.</p></div>
+    <div class="phase"><span class="tag t2">Вторая фаза</span>
+      <p>Интеграция с доставкой: система собирает корзину в магазине, оплату подтверждает человек.</p></div>
+    <p class="muted" style="margin-top:12px">Каталог — около 150–200 позиций, один пользователь.</p>
+  </div>
+</section>
+
+<section class="slide">
+  <div class="panel">
+    <h2>Как устроен учёт</h2>
+    <div class="grid g2">
+      <div class="tile"><h3>Остаток — сумма событий</h3><p>Числом он не хранится, а складывается из журнала. Любую ошибочную отметку можно откатить.</p></div>
+      <div class="tile"><h3>Расходная единица</h3><p>Упаковка переводится в неё коэффициентом: пачка кофе — граммы, коробка капсул — штуки.</p></div>
+      <div class="tile"><h3>Один продукт</h3><p>Молоко в литре и в поллитре — одна позиция. Разный только объём прихода.</p></div>
+      <div class="tile"><h3>Разные продукты</h3><p>Разная расходная единица — разные позиции. Кофе в пачке и в капсулах живут отдельно.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <div class="panel">
+    <h2>Три типа списания</h2>
+    <div class="grid g3">
+      <div class="tile"><h3>Ритмичные</h3><p>Кофе, молоко, хлеб, корм. Списываются автоматически по норме каждый день.</p></div>
+      <div class="tile"><h3>Рывковые</h3><p>Крупы, соусы, консервы. Только по отметке или по рецепту.</p></div>
+      <div class="tile"><h3>Медленные</h3><p>Соль, масло, специи. Не списываются: к концу ожидаемого срока упаковки всплывают в колокольчике.</p></div>
+    </div>
+    <p class="muted" style="margin-top:18px">Тип система выставляет сама по истории покупок и расхода.</p>
+  </div>
+</section>
+
+<section class="slide">
+  <div class="panel">
+    <h2>Светофор статусов</h2>
+    <div class="status"><span class="dot" style="background:var(--red)"></span><b>Покупать</b><span>Попадает в список, может прийти уведомление вне цикла</span></div>
+    <div class="status"><span class="dot" style="background:var(--amber)"></span><b>Скоро</b><span>Видно в инвентаре и на пересмотре, отдельно не беспокоит</span></div>
+    <div class="status"><span class="dot" style="background:var(--green)"></span><b>Норма</b><span>Всё в порядке</span></div>
+    <p class="muted" style="margin-top:16px">У рывковых статус ставится вручную или задаётся нижним порогом.</p>
+  </div>
+</section>
+
+<section class="slide">
+  <div class="panel">
+    <h2>Нормы и самокалибровка</h2>
+    <div class="grid g2">
+      <div class="tile"><h3>Нормы</h3><p>Предлагаются при первом запуске, живут в карточке продукта, правятся вручную. Вручную отмечается только отклонение — вторая чашка кнопкой.</p></div>
+      <div class="tile"><h3>Опрос об остатке</h3><p>На старте система спрашивает, потом вопросы затухают и возвращаются только при аномалии. Не больше 2–3 за раз, ответ грубый: много, мало, кончается.</p></div>
+      <div class="tile"><h3>Вычёркивание из списка</h3><p>Сигнал «дома больше, чем я думала»: поднимает оценку остатка и смягчает норму.</p></div>
+      <div class="tile"><h3>Остаток ушёл в минус</h3><p>Не ошибка, а подсказка: уверенность падает, позиция поднимается на пересмотре, норма пересчитывается.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <div class="panel">
+    <h2>Киоск на кухне</h2>
+    <div class="kiosk">
+      <div class="kbtn k-off">Списать<small>съел порцию · закончилось</small></div>
+      <div class="kbtn k-on">Добавить<small>экран прихода</small></div>
+    </div>
+    <p>Сначала действие, потом продукт. Рядом — инвентарь по приоритету покупки. Порча отмечается отдельной кнопкой и прогноз не учит. Голос — один из способов ввода, не основной.</p>
+  </div>
+</section>
+
+<section class="slide">
+  <div class="panel">
+    <h2>Приход, четыре пути</h2>
+    <div class="grid g4">
+      <div class="tile"><h3>Галочки</h3><p>По списку прямо в магазине</p></div>
+      <div class="tile"><h3>Фото чека</h3><p>Распознаётся и пишется сразу</p></div>
+      <div class="tile"><h3>Фото стола</h3><p>Инвентаризация одним снимком</p></div>
+      <div class="tile"><h3>Поиск</h3><p>Вручную по каталогу</p></div>
+    </div>
+    <p class="muted" style="margin-top:18px">Без подтверждения распознанного — точность до грамма не нужна. Короткий тап у полки — взял как в списке, долгое нажатие — правка количества.</p>
+  </div>
+</section>
+
+<section class="slide">
+  <div class="panel">
+    <h2>Рецепты и меню на неделю</h2>
+    <div class="flow">
+      <span class="chip">План блюд на неделю</span><span class="arrow">→</span>
+      <span class="chip">Ингредиенты в список</span><span class="arrow">→</span>
+      <span class="chip">«Приготовил»</span><span class="arrow">→</span>
+      <span class="chip">Сверка в четверг</span>
+    </div>
+    <div class="grid g2" style="margin-top:20px">
+      <div class="tile"><h3>Рецепт — шаблон списания</h3><p>Снимает всё по номиналу, без правки граммовок. Замены и пропуски не выясняются — мелкие расхождения допустимо теряются.</p></div>
+      <div class="tile"><h3>Импровизация</h3><p>«Списать блюдо» голосом: система разбирает на ингредиенты и после всегда предлагает сохранить рецепт.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <div class="panel">
+    <h2>Пересмотр в четверг</h2>
+    <p class="lead" style="margin-bottom:1em">Главный экран. Не момент времени, а задача, которая висит до закупки. Напоминание повторяется в субботу.</p>
+    <div class="grid g2">
+      <div class="tile"><h3>Базовый режим</h3><p>Только спорное — 5–7 строк, минута.</p></div>
+      <div class="tile"><h3>Детальный режим</h3><p>Весь список с обоснованием. Выбор режима запоминается.</p></div>
+    </div>
+    <p class="muted" style="margin-top:18px">Сюда стянута вся калибровка: позиции с низкой уверенностью выше, сверка меню, подбивка расхождений.</p>
+  </div>
+</section>
+
+<section class="slide">
+  <div class="panel">
+    <h2>Уведомления и колокольчик</h2>
+    <div class="grid g2">
+      <div class="tile"><h3>Два повода для уведомления</h3><p>Пересмотр в четверг вечером и красная позиция вне цикла. Жёлтые отдельно не шлются.</p></div>
+      <div class="tile"><h3>Колокольчик — открытые дела</h3><p>Не архив уведомлений: пересмотр не пройден, красные позиции, блюдо не отмечено, сессия магазина протухла. Пункт уходит по выполнении.</p></div>
+    </div>
+    <p class="muted" style="margin-top:18px">Отпуск задаётся кнопкой с датами, заранее или задним числом — автосписания за эти дни отменяются.</p>
+  </div>
+</section>
+
+<section class="slide">
+  <div class="panel">
+    <h2>Жизненный цикл позиции</h2>
+    <div class="flow">
+      <span class="chip">Новая</span><span class="arrow">→</span>
+      <span class="chip">Активна</span><span class="arrow">→</span>
+      <span class="chip">Неактивна</span>
+    </div>
+    <div class="grid g3" style="margin-top:20px">
+      <div class="tile"><h3>Появилась</h3><p>Система предлагает задать норму. Отказался — вернётся позже с готовым предложением. Сама не выставляет.</p></div>
+      <div class="tile"><h3>Перестали покупать</h3><p>На пересмотре предложение: отключить, понизить норму или оставить. Решает человек.</p></div>
+      <div class="tile"><h3>Неактивна</h3><p>Кнопка «больше не покупаю» или полгода без покупок. Состояние одно, повод — в журнале.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <div class="panel">
+    <h2>Восемь экранов</h2>
+    <div class="grid g4">
+      <div class="tile"><h3>Киоск</h3></div>
+      <div class="tile"><h3>Инвентарь</h3></div>
+      <div class="tile"><h3>Список покупок</h3></div>
+      <div class="tile"><h3>Меню на неделю</h3></div>
+      <div class="tile"><h3>Пересмотр</h3></div>
+      <div class="tile"><h3>Рецепты</h3></div>
+      <div class="tile"><h3>Карточка продукта</h3></div>
+      <div class="tile"><h3>Журнал действий</h3></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <div class="panel">
+    <h2>Сознательно упрощено</h2>
+    <div class="strike">
+      <span>Места хранения</span><span>Источник закупки</span><span>Открытые упаковки</span>
+      <span>Сезонность</span><span>Сроки годности</span><span>Офлайн</span>
+      <span>Обязательная инвентаризация</span><span>Стоимость списка</span>
+    </div>
+    <p class="muted" style="margin-top:20px">Аномалии вроде гостей система отсекает сама. Цены копятся с привязкой к магазину, но пока ни на что не влияют.</p>
+  </div>
+</section>
+
+<section class="slide">
+  <div class="panel">
+    <h2>Техническая основа</h2>
+    <div class="grid g2">
+      <div class="tile"><h3>Веб-приложение</h3><p>PWA, одна кодовая база. Хостинг на ВПС — доступ нужен из магазина.</p></div>
+      <div class="tile"><h3>Распознавание</h3><p>Голос и фото через облачные API крупных провайдеров, не локальные модели.</p></div>
+      <div class="tile"><h3>Стиль — стекло</h3><p>Полупрозрачные поверхности, много воздуха, цвет работает на светофор. Размытие только на панелях.</p></div>
+      <div class="tile"><h3>Открыто</h3><p>PostgreSQL или SQLite — на таком объёме непринципиально.</p></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <div class="panel">
+    <h2>Вторая фаза: закупка в Barbora</h2>
+    <div class="flow">
+      <span class="chip">Пересмотр</span><span class="arrow">→</span>
+      <span class="chip">«Оформить»</span><span class="arrow">→</span>
+      <span class="chip">Playwright собирает корзину</span><span class="arrow">→</span>
+      <span class="chip">Оплату жмёт человек</span>
+    </div>
+    <div class="grid g3" style="margin-top:20px">
+      <div class="tile"><h3>Почему браузер</h3><p>Открытого API нет. Автоматизация страницы переживает больше изменений, чем внутренние эндпоинты.</p></div>
+      <div class="tile"><h3>Привязка товаров</h3><p>Вручную, по одной, в момент первого заказа позиции. Дальше связь запоминается.</p></div>
+      <div class="tile"><h3>Надёжность</h3><p>Фоновая задача, пропуск отсутствующих товаров, скриншот при падении.</p></div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<nav class="nav" aria-label="Слайды">
+  <button id="prev" aria-label="Предыдущий слайд">‹</button>
+  <span class="count" id="count">1 / 16</span>
+  <button id="next" aria-label="Следующий слайд">›</button>
+  <button id="theme" aria-label="Сменить тему">◐</button>
+</nav>
+
+<script>
+(function(){
+  var slides=[].slice.call(document.querySelectorAll('.slide'));
+  var orbs=[].slice.call(document.querySelectorAll('.orb'));
+  var i=0, n=slides.length;
+  try{var s=parseInt(sessionStorage.getItem('deck-i'),10);if(s>=0&&s<n)i=s}catch(e){}
+  function show(k){
+    i=Math.max(0,Math.min(n-1,k));
+    slides.forEach(function(el,j){el.classList.toggle('on',j===i)});
+    document.getElementById('count').textContent=(i+1)+' / '+n;
+    document.getElementById('bar').style.width=((i+1)/n*100)+'%';
+    var a=i*37;
+    orbs.forEach(function(o,j){
+      var x=Math.sin((a+j*90)*Math.PI/180)*6, y=Math.cos((a+j*120)*Math.PI/180)*5;
+      o.style.transform='translate('+x+'vmax,'+y+'vmax)';
+    });
+    try{sessionStorage.setItem('deck-i',i)}catch(e){}
+  }
+  document.getElementById('prev').onclick=function(){show(i-1)};
+  document.getElementById('next').onclick=function(){show(i+1)};
+  document.addEventListener('keydown',function(e){
+    if(e.key==='ArrowRight'||e.key==='PageDown'||e.key===' '){e.preventDefault();show(i+1)}
+    if(e.key==='ArrowLeft'||e.key==='PageUp'){e.preventDefault();show(i-1)}
+  });
+  var sx=null,sy=null;
+  document.addEventListener('touchstart',function(e){sx=e.touches[0].clientX;sy=e.touches[0].clientY},{passive:true});
+  document.addEventListener('touchend',function(e){
+    if(sx===null)return;
+    var dx=e.changedTouches[0].clientX-sx, dy=e.changedTouches[0].clientY-sy;
+    if(Math.abs(dx)>50&&Math.abs(dx)>Math.abs(dy)*1.3)show(i+(dx<0?1:-1));
+    sx=null;
+  },{passive:true});
+  document.getElementById('theme').onclick=function(){
+    var r=document.documentElement, cur=r.getAttribute('data-theme');
+    var dark=cur?cur==='dark':matchMedia('(prefers-color-scheme: dark)').matches;
+    r.setAttribute('data-theme',dark?'light':'dark');
+  };
+  show(i);
+})();
+</script>
+</body>
+</html>

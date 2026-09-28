@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Что есть дома</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300..500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'Inter',ui-sans-serif,system-ui,-apple-system,'Segoe UI',sans-serif;font-weight:350;letter-spacing:-0.02em;font-feature-settings:"cv11" 1,"ss01" 1;background:#e3e6eb;color:#0f1012}
+a{color:#0071e3}a:hover{color:#005bb8}
+button{font:inherit;letter-spacing:inherit}
+</style>
+</helmet>
+<div style="position: relative; isolation: isolate; width: 390px; height: 1220px; overflow: hidden; background: #e3e6eb; color: #0f1012; font-family: 'Inter', ui-sans-serif, system-ui, sans-serif; font-weight: 350; letter-spacing: -0.02em; box-sizing: border-box">
+<div aria-hidden="true" style="position: absolute; z-index: -1; right: -130px; top: -6%; width: 340px; height: 340px; border-radius: 9999px; background: rgba(0,113,227,0.28); filter: blur(60px); pointer-events: none"></div>
+<div aria-hidden="true" style="position: absolute; z-index: -1; left: -150px; top: 22%; width: 340px; height: 340px; border-radius: 9999px; background: rgba(0,113,227,0.14); filter: blur(70px); pointer-events: none"></div>
+<div aria-hidden="true" style="position: absolute; z-index: -1; right: -120px; top: 48%; width: 300px; height: 300px; border-radius: 9999px; background: rgba(0,113,227,0.18); filter: blur(70px); pointer-events: none"></div>
+<div aria-hidden="true" style="position: absolute; z-index: -1; left: -110px; top: 74%; width: 320px; height: 320px; border-radius: 9999px; background: rgba(0,113,227,0.12); filter: blur(70px); pointer-events: none"></div>
+<div style="display: flex; flex-direction: column; gap: 22px; padding: 14px 20px 120px; box-sizing: border-box">
+
+<div style="display: flex; align-items: center; justify-content: flex-end; height: 48px">
+<a href="Bell.dc.html" aria-label="Открытые дела: 4" style="position: relative; width: 44px; height: 44px; border-radius: 9999px; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.16); backdrop-filter: blur(24px) saturate(1.8); -webkit-backdrop-filter: blur(24px) saturate(1.8); border: 1px solid rgba(255,255,255,0.6); box-shadow: inset 1.5px 1.5px 1px rgba(255,255,255,0.85), inset -1px -1px 1px rgba(255,255,255,0.35), inset 0 0 14px rgba(255,255,255,0.25), 0 8px 18px -12px rgba(15,16,18,0.35); color: #0f1012">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0112 0c0 7 3 8 3 8H3s3-1 3-8"></path><path d="M10 20a2 2 0 004 0"></path></svg>
+<span style="position: absolute; top: 10px; right: 11px; width: 7px; height: 7px; border-radius: 9999px; background: #0f1012"></span>
+</a>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span style="font-size: 13px; color: #4a4d52">Купить: 1, скоро закончится: 4</span>
+<h1 style="margin: 0; font-size: 27px; font-weight: 350; line-height: 1.2; letter-spacing: -0.02em">Что есть дома</h1>
+</div>
+
+<div role="group" aria-label="Сортировка" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; padding: 4px; border-radius: 9999px; background: rgba(255,255,255,0.16); backdrop-filter: blur(24px) saturate(1.8); -webkit-backdrop-filter: blur(24px) saturate(1.8); border: 1px solid rgba(255,255,255,0.6); box-shadow: inset 1.5px 1.5px 1px rgba(255,255,255,0.85), inset -1px -1px 1px rgba(255,255,255,0.35), inset 0 0 14px rgba(255,255,255,0.25)">
+<button type="button" onClick="{{toUrgency}}" aria-pressed="{{urgOn}}" style="{{urgStyle}}">По срочности</button>
+<button type="button" onClick="{{toCategory}}" aria-pressed="{{catOn}}" style="{{catStyle}}">По категориям</button>
+</div>
+
+<sc-for list="{{groups}}" as="g" hint-placeholder-count="1">
+<section style="display: flex; flex-direction: column; gap: 8px">
+<sc-if value="{{g.hasTitle}}" hint-placeholder-val="{{ false }}">
+<h2 style="margin: 0; padding: 0 22px; font-size: 12px; font-weight: 400; color: #4a4d52">{{g.title}}</h2>
+</sc-if>
+<div style="display: flex; flex-direction: column; padding: 4px 22px; background: rgba(255,255,255,0.2); backdrop-filter: blur(40px) saturate(1.8); -webkit-backdrop-filter: blur(40px) saturate(1.8); border: 0.5px solid rgba(255,255,255,0.9); box-shadow: inset 0 0 0 0.5px rgba(0,0,0,0.05), inset 0 1px 0 rgba(255,255,255,1); border-radius: 36px">
+<sc-for list="{{g.items}}" as="it" hint-placeholder-count="10">
+<a href="Card.dc.html" style="{{it.row}}">
+<span style="{{it.dot}}"></span>
+<span style="display: flex; flex-direction: column; gap: 3px; flex-grow: 1; min-width: 0">
+<span style="font-size: 16px; line-height: 1.25">{{it.name}}</span>
+<span style="font-size: 13px; color: #4a4d52">{{it.note}}</span>
+</span>
+<span style="font-size: 12px; font-weight: 400; padding: 4px 10px; border-radius: 9999px; border: 0.5px solid rgba(0,0,0,0.14); white-space: nowrap">{{it.label}}</span>
+</a>
+</sc-for>
+</div>
+</section>
+</sc-for>
+</div>
+
+<nav aria-label="Разделы" style="position: absolute; left: 20px; right: 20px; bottom: 20px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 6px; box-sizing: border-box; border-radius: 9999px; background: rgba(255,255,255,0.16); backdrop-filter: blur(24px) saturate(1.8); -webkit-backdrop-filter: blur(24px) saturate(1.8); border: 1px solid rgba(255,255,255,0.6); box-shadow: inset 1.5px 1.5px 1px rgba(255,255,255,0.85), inset -1px -1px 1px rgba(255,255,255,0.35), inset 0 0 14px rgba(255,255,255,0.25), 0 8px 18px -12px rgba(15,16,18,0.35)">
+<a href="Review.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; height: 52px; border-radius: 9999px; color: #4a4d52; text-decoration: none; font-size: 12px">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"></rect><path d="M9 4h6v3H9z"></path><path d="M9 13l2 2 4-4"></path></svg>
+Пересмотр</a>
+<a href="List.dc.html" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; height: 52px; border-radius: 9999px; color: #4a4d52; text-decoration: none; font-size: 12px">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 6h10M10 12h10M10 18h10"></path><path d="M4 6l1.2 1.2L7.5 5M4 12l1.2 1.2L7.5 11"></path><circle cx="5.5" cy="18" r="1"></circle></svg>
+Список</a>
+<a href="Inventory.dc.html" aria-current="page" style="display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; height: 52px; border-radius: 9999px; background: #fdfdfd; color: #0071e3; text-decoration: none; font-size: 12px; font-weight: 500; box-shadow: 0 4px 10px -6px rgba(15,16,18,0.35)">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7l9-4 9 4-9 4-9-4z"></path><path d="M3 7v10l9 4 9-4V7"></path><path d="M12 11v10"></path></svg>
+Дома</a>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1220}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const s = this.state || {};
+    const sort = s.sort || 'urgency';
+    const seg = (on) => 'height: 44px; border-radius: 9999px; font-size: 15px; cursor: pointer; ' + (on ? 'background: #fdfdfd; color: #0071e3; font-weight: 500; border: 0.5px solid #fdfdfd; box-shadow: 0 4px 10px -6px rgba(15,16,18,0.35)' : 'background: transparent; color: #4a4d52; border: 0.5px solid transparent');
+    const dot = (c) => 'width: 10px; height: 10px; border-radius: 9999px; flex-shrink: 0; background: ' + c;
+    const st = {
+      r: { rank: 0, dot: dot('#C8372D'), label: 'Купить' },
+      a: { rank: 1, dot: dot('#E6A23C'), label: 'Скоро' },
+      g: { rank: 2, dot: dot('#3A9A6A'), label: 'Есть' }
+    };
+    const raw = [
+      { name: 'Молоко', note: 'около 0,3 л, до завтра', s: 'r', cat: 'Молочное и яйца' },
+      { name: 'Кофе в зёрнах', note: 'около 110 г, на 3 дня', s: 'a', cat: 'Бакалея' },
+      { name: 'Яйца', note: 'около 4 шт', s: 'a', cat: 'Молочное и яйца' },
+      { name: 'Гречка', note: 'отмечено: мало', s: 'a', cat: 'Бакалея' },
+      { name: 'Соль', note: 'пачка к концу срока', s: 'a', cat: 'Специи и масло' },
+      { name: 'Хлеб', note: 'около половины батона', s: 'g', cat: 'Хлеб и прочее' },
+      { name: 'Сливочное масло', note: 'около 150 г', s: 'g', cat: 'Молочное и яйца' },
+      { name: 'Сыр', note: 'около 200 г', s: 'g', cat: 'Молочное и яйца' },
+      { name: 'Оливковое масло', note: 'бутылка открыта', s: 'g', cat: 'Специи и масло' },
+      { name: 'Корм', note: 'около 9 пакетиков', s: 'g', cat: 'Хлеб и прочее' }
+    ];
+    const view = (list) => list.map((x, i) => ({
+      name: x.name, note: x.note, dot: st[x.s].dot, label: st[x.s].label,
+      row: 'display: flex; align-items: center; gap: 14px; min-height: 64px; padding: 8px 0; box-sizing: border-box; color: #0f1012; text-decoration: none; ' + (i < list.length - 1 ? 'border-bottom: 0.5px solid rgba(0,0,0,0.08)' : '')
+    }));
+    let groups;
+    if (sort === 'urgency') {
+      groups = [{ hasTitle: false, title: '', items: view(raw.slice().sort((a, b) => st[a.s].rank - st[b.s].rank)) }];
+    } else {
+      const cats = ['Молочное и яйца', 'Бакалея', 'Специи и масло', 'Хлеб и прочее'];
+      groups = cats.map((c) => ({ hasTitle: true, title: c, items: view(raw.filter((x) => x.cat === c)) }));
+    }
+    return {
+      groups: groups,
+      urgOn: sort === 'urgency' ? 'true' : 'false',
+      catOn: sort === 'category' ? 'true' : 'false',
+      urgStyle: seg(sort === 'urgency'),
+      catStyle: seg(sort === 'category'),
+      toUrgency: () => this.setState({ sort: 'urgency' }),
+      toCategory: () => this.setState({ sort: 'category' })
+    };
+  }
+}
+</script>
+</body>
+</html>

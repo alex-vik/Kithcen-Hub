@@ -1,0 +1,5 @@
+node_modules/
+.env
+*.log
+.claude/agent-memory-local/
+.claude/settings.local.json
