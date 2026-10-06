@@ -1,4 +1,4 @@
-// Общие данные тестов журнала остатка (T-002). Время фиксировано и передаётся явно (ADR-004, 14.4).
+// Общие данные тестов журнала остатка (T-002, переведены на T-003). Время фиксировано и передаётся явно (ADR-004, 14.4).
 import type { StockFoldEvent, StockEventType } from '../../src/domain/index.ts';
 
 export const iso = (s: string): number => Temporal.Instant.from(s).epochMilliseconds;
@@ -14,15 +14,13 @@ export function fe(
   return { id, type, qty, occurredAt: iso(at), seq };
 }
 
-// Кофе из ADR-003, раздел 3 (К4). Порядок seq — порядок записи.
-export const adrCoffee = (): StockFoldEvent[] => [
-  fe('e1', 'purchase', 500, '2026-10-03T10:00:00Z', 1),
-  fe('e2', 'auto_writeoff', 20, '2026-10-04T00:00:00Z', 2),
-  fe('e3', 'inventory', 450, '2026-10-04T21:00:00Z', 3),
-  fe('e4', 'auto_writeoff', 20, '2026-10-05T00:00:00Z', 4),
+// Молоко из T-003 К5. Порядок seq — порядок записи.
+export const milkEvents = (): StockFoldEvent[] => [
+  fe('e1', 'purchase', 6, '2026-10-03T10:00:00Z', 1),
+  fe('e2', 'used', 1, '2026-10-04T08:00:00Z', 2),
+  fe('e3', 'recount', 3, '2026-10-04T21:00:00Z', 3),
+  fe('e4', 'used', 1, '2026-10-05T09:00:00Z', 4),
 ];
-// К5: порция задним числом до инвентаризации; К6: после.
-export const portionBefore = (): StockFoldEvent =>
-  fe('e5', 'portion', 10, '2026-10-04T08:00:00Z', 5);
-export const portionAfter = (): StockFoldEvent =>
-  fe('e5', 'portion', 10, '2026-10-05T08:00:00Z', 5);
+// Задним числом до «пересчитал» и после него (К5).
+export const usedBefore = (): StockFoldEvent => fe('e5', 'used', 1, '2026-10-04T07:00:00Z', 5);
+export const usedAfter = (): StockFoldEvent => fe('e5', 'used', 1, '2026-10-06T20:00:00Z', 5);
