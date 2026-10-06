@@ -2,8 +2,11 @@
 import { DatabaseSync } from 'node:sqlite';
 import { randomUUID } from 'node:crypto';
 import { readdirSync, readFileSync } from 'node:fs';
-import { diffProduct, newProductAttrs, productFields, validateNewProduct, validateProductPatch } from '../../domain/index.ts';
-import type { Params, Product, ProductField } from '../../domain/index.ts';
+import {
+  diffProduct, foldStock, newProductAttrs, productFields, stockEventValues, validateNewProduct, validateProductPatch,
+  validateStockEventInput, validateUnitChange,
+} from '../../domain/index.ts';
+import type { Params, Product, ProductField, StockEventType, StockFoldEvent } from '../../domain/index.ts';
 
 const migrationsDir = new URL('./migrations/', import.meta.url);
 
@@ -41,7 +44,6 @@ const columns: Record<ProductField, string> = {
   lowStockThreshold: 'low_stock_threshold',
   portion: 'portion',
 };
-const fields = productFields;
 
 type Instant = Temporal.Instant;
 type Result = { ok: true; product: Product } | { ok: false; errors: { field: string }[] };
@@ -90,13 +92,13 @@ const insertChange = (db: DatabaseSync, productId: string, at: Instant, kind: st
 export function createProduct(db: DatabaseSync, input: Record<string, unknown>, at: Instant, params: Params): Result {
   const v = validateNewProduct(input, params);
   if (!v.ok) return v;
-  const values = Object.fromEntries(fields.map((f) => [f, input[f] ?? null]));
+  const values = Object.fromEntries(productFields.map((f) => [f, input[f] ?? null]));
   const id = randomUUID();
   inTransaction(db, () => {
     db.prepare(
-      `INSERT INTO products (id, ${fields.map((f) => columns[f]).join(', ')}, active, created_at)
-       VALUES (?, ${fields.map(() => '?').join(', ')}, 1, ?)`,
-    ).run(id, ...fields.map((f) => values[f] as string | number | null), at.epochMilliseconds);
+      `INSERT INTO products (id, ${productFields.map((f) => columns[f]).join(', ')}, active, created_at)
+       VALUES (?, ${productFields.map(() => '?').join(', ')}, 1, ?)`,
+    ).run(id, ...productFields.map((f) => values[f] as string | number | null), at.epochMilliseconds);
     insertChange(db, id, at, 'create', null, newProductAttrs(input));
   });
   return { ok: true, product: getProduct(db, id) as Product };
@@ -113,6 +115,9 @@ export function updateProduct(
   if (!v.ok) return v;
   const current = getProduct(db, id);
   if (!current) return { ok: false, errors: [{ field: 'id' }] };
+  const hasEvents = db.prepare('SELECT 1 FROM stock_events WHERE product_id = ? LIMIT 1').get(current.id) !== undefined;
+  const u = validateUnitChange(current, patch, hasEvents);
+  if (!u.ok) return u;
   const { before, after } = diffProduct(current, patch);
   const changed = Object.keys(after) as ProductField[];
   if (changed.length === 0) return { ok: true, product: current };
@@ -124,4 +129,54 @@ export function updateProduct(
     insertChange(db, current.id, at, 'update', before, after);
   });
   return { ok: true, product: getProduct(db, current.id) as Product };
+}
+
+export type StockEvent = StockFoldEvent & {
+  productId: string;
+  packages: number | null;
+  packageFactor: number | null;
+  recordedAt: number;
+};
+type EventResult = { ok: true; event: StockEvent } | { ok: false; errors: { field: string }[] };
+
+function toEvent(r: Record<string, unknown>): StockEvent {
+  return {
+    seq: r.seq as number,
+    id: r.id as string,
+    productId: r.product_id as string,
+    type: r.type as StockEventType,
+    qty: r.qty as number | null,
+    packages: r.packages as number | null,
+    packageFactor: r.package_factor as number | null,
+    occurredAt: r.occurred_at as number,
+    recordedAt: r.recorded_at as number,
+  };
+}
+
+export function getStockEvents(db: DatabaseSync, productId: string): StockEvent[] {
+  return db.prepare('SELECT * FROM stock_events WHERE product_id = ? ORDER BY seq').all(productId).map(toEvent);
+}
+
+// BR-01: остаток — свёртка журнала на лету; null для несуществующей позиции.
+export function getStock(db: DatabaseSync, productId: string) {
+  return getProduct(db, productId) ? foldStock(getStockEvents(db, productId)) : null;
+}
+
+// T-002: запись события. Время события не позже now (П-1); коэффициент покупки — из ввода, иначе позиции (Р-2).
+export function recordStockEvent(db: DatabaseSync, input: Record<string, unknown>, now: Instant): EventResult {
+  const v = validateStockEventInput(input);
+  if (!v.ok) return v;
+  const product = getProduct(db, input.productId);
+  if (!product) return { ok: false, errors: [{ field: 'productId' }] };
+  const values = stockEventValues(input, product.packageFactor);
+  if (!values.ok) return values;
+  const occurred = input.occurredAt as Instant | undefined;
+  const occurredAt = Math.min(occurred?.epochMilliseconds ?? Infinity, now.epochMilliseconds);
+  const row = db
+    .prepare(
+      `INSERT INTO stock_events (id, product_id, type, qty, packages, package_factor, occurred_at, recorded_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING *`,
+    )
+    .get(input.id as string, product.id, input.type as StockEventType, values.qty, values.packages, values.packageFactor, occurredAt, now.epochMilliseconds);
+  return { ok: true, event: toEvent(row as Record<string, unknown>) };
 }
