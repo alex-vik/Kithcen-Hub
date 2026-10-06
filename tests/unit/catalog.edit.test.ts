@@ -92,6 +92,8 @@ describe('T-001 К27: неуспешная правка ничего не мен
     ['порция 0', { portion: 0 }, 'portion'],
     ['нижний порог −1', { lowThreshold: -1 }, 'low_threshold'],
     ['норма без периода', { normAmount: 250, normPeriod: null }, 'norm_period'],
+    ['период без нормы: normPeriod null у позиции с нормой', { normPeriod: null }, 'norm_period'],
+    ['норма null без сброса периода', { normAmount: null }, 'norm_period'],
     ['N дней = 0', { normPeriod: days(0) }, 'norm_period'],
     ['N дней = −1', { normPeriod: days(-1) }, 'norm_period'],
     ['N дней = 1,5', { normPeriod: days(1.5) }, 'norm_period'],
@@ -102,6 +104,14 @@ describe('T-001 К27: неуспешная правка ничего не мен
     const original = coffee();
     const snapshot = structuredClone(original);
     expect(errorOf(editProduct(original, patch))).toBe(code);
+    expect(original).toEqual(snapshot);
+  });
+
+  it('T-001 К27: период без нормы у позиции без нормы — отказ, позиция не изменена', () => {
+    const original = product();
+    expect(original.norm).toBeNull();
+    const snapshot = structuredClone(original);
+    expect(errorOf(editProduct(original, { normPeriod: WEEK }))).toBe('norm_period');
     expect(original).toEqual(snapshot);
   });
 });

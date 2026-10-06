@@ -1,7 +1,7 @@
 // T-001 (B-01): позиция каталога — атрибуты, единицы, пересчёт упаковок, норма, порция.
 // FR-CAT-01, FR-CAT-02, FR-CAT-08, BR-03, BR-04, BR-05, BR-10; решения Q-28, Q-29, Q-30.
-// ADR-004: чистые функции, отказ команды — CommandResult. Каркас: только типы и сигнатуры,
-// логику пишет backend-dev. Идентификатор позиции и время создания — B-01b (хранение),
+// ADR-004: чистые функции, отказ команды — CommandResult.
+// Идентификатор позиции и время создания — B-01b (хранение),
 // активность как команда и product_log — B-12.
 
 import { packsToMilli, roundHalfAway, toMilli } from './quantity.ts';
@@ -115,7 +115,10 @@ export function createProduct(input: ProductInput): CommandResult<Product, Produ
 
 const UNITS: readonly string[] = ['г', 'мл', 'шт'];
 
-/** Поля после слияния; количества — уже в тысячных долях (нормой — введённое). */
+/**
+ * Поля после слияния с текущей позицией; количества — в единицах ввода, как в ProductInput
+ * (для существующей позиции editProduct переводит тысячные доли обратно делением на 1000).
+ */
 type Fields = {
   name: string;
   unit: string | null | undefined;
