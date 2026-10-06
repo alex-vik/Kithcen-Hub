@@ -83,6 +83,13 @@ function failedAttr(r: unknown): string {
   return res.error!.attribute;
 }
 
+// Элемент по индексу; бросает, если его нет (noUncheckedIndexedAccess), а не подменяет проверку.
+function nth<X>(xs: readonly X[], i: number): X {
+  const x = xs[i];
+  if (x === undefined) throw new Error(`нет элемента с индексом ${i} (длина ${xs.length})`);
+  return x;
+}
+
 function deepFreeze<X>(o: X): X {
   if (o && typeof o === 'object') {
     Object.freeze(o);
@@ -358,27 +365,27 @@ describe('T-002 К8-К13: остаток как свёртка', () => {
 describe('T-002 К14-К16: лента остатка', () => {
   it('T-002 К14: строки до/после/неявное приращение для журнала К11 (а)', () => {
     const j = j11a();
-    const rows = stockLedger([j[3], j[1], j[0], j[2]]);
+    const rows = stockLedger([nth(j, 3), nth(j, 1), nth(j, 0), nth(j, 2)]);
     expect(rows.map((r) => r.eventId)).toEqual(j.map((e) => e.id));
     const num = (x: number | null) => (x === null ? null : Math.round(x * 1e9) / 1e9);
     expect(rows.map((r) => [num(r.before), num(r.after)])).toEqual([[0, 1000], [1000, -500], [-500, 0], [0, 900]]);
-    expect(rows[0].implicit).toBeNull();
-    expect(rows[1].implicit).toBeNull();
-    expect(rows[2].implicit).toBeCloseTo(500, 9);
-    expect(rows[3].implicit).toBeNull();
+    expect(nth(rows, 0).implicit).toBeNull();
+    expect(nth(rows, 1).implicit).toBeNull();
+    expect(nth(rows, 2).implicit).toBeCloseTo(500, 9);
+    expect(nth(rows, 3).implicit).toBeNull();
   });
 
   it('T-002 К14: у инвентаризации, совпавшей с расчётным значением, неявное приращение 0, а не пусто', () => {
     const rows = stockLedger([ev('purchase', at('12', '10:00'), 1, 700), ev('inventory', at('12', '11:00'), 2, 700)]);
-    expect(rows[1].implicit).toBe(0);
-    expect(rows[0].implicit).toBeNull();
+    expect(nth(rows, 1).implicit).toBe(0);
+    expect(nth(rows, 0).implicit).toBeNull();
   });
 
   it('T-002 К14: инвентаризация первой в журнале — неявное приращение равно значению', () => {
     const rows = stockLedger([ev('inventory', at('12', '10:00'), 1, 400)]);
-    expect(rows[0].before).toBe(0);
-    expect(rows[0].after).toBe(400);
-    expect(rows[0].implicit).toBeCloseTo(400, 9);
+    expect(nth(rows, 0).before).toBe(0);
+    expect(nth(rows, 0).after).toBe(400);
+    expect(nth(rows, 0).implicit).toBeCloseTo(400, 9);
   });
 
   it('T-002 К14: лента пустого журнала пуста', () => {
@@ -394,13 +401,13 @@ describe('T-002 К14-К16: лента остатка', () => {
       const shuffled = [...j].reverse();
       const rows = stockLedger(shuffled);
       expect(rows).toHaveLength(j.length);
-      expect(rows[0].before).toBe(0);
+      expect(nth(rows, 0).before).toBe(0);
       rows.forEach((r, i) => {
-        if (i > 0) expect(r.before).toBeCloseTo(rows[i - 1].after, 9);
+        if (i > 0) expect(r.before).toBeCloseTo(nth(rows, i - 1).after, 9);
         const e = j.find((x) => x.id === r.eventId)!;
-        if (e.kind in SIGN) expect(r.after - r.before).toBeCloseTo(SIGN[e.kind] * e.quantity!, 9);
+        if (e.kind in SIGN) expect(r.after - r.before).toBeCloseTo(SIGN[e.kind]! * e.quantity!, 9);
       });
-      expect(rows[rows.length - 1].after).toBeCloseTo(stockBalance(j), 9);
+      expect(nth(rows, rows.length - 1).after).toBeCloseTo(stockBalance(j), 9);
     }
   });
 
