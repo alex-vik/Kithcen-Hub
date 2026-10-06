@@ -1,0 +1,21 @@
+{
+  "name": "kitchen-hub",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Домашний склад продуктов — личное PWA (см. docs/spec.md)",
+  "type": "module",
+  "engines": {
+    "node": ">=24.15.0"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:sim": "vitest run tests/sim",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.3"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  // ADR-001. Только проверка типов (noEmit): сервер запускается Node напрямую
+  // (встроенное удаление типов), тесты — Vitest, PWA — Vite (шаг 6).
+  // erasableSyntaxOnly: без enum, namespace и parameter properties.
+  // Относительные импорты — с расширением .ts.
+  "compilerOptions": {
+    "target": "es2024",
+    "lib": ["es2024", "DOM", "DOM.Iterable"],
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "types": ["node"],
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "erasableSyntaxOnly": true,
+    "isolatedModules": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true
+  },
+  "include": ["src", "tests", "vitest.config.ts"]
+}

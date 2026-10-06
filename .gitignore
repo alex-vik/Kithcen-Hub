@@ -3,3 +3,11 @@ node_modules/
 *.log
 .claude/agent-memory-local/
 .claude/settings.local.json
+
+# ADR-001, ADR-002
+dist/
+coverage/
+data/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
