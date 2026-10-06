@@ -7,6 +7,8 @@
 - Обязательные строковые атрибуты (название, упаковка): тесты К4 изначально покрывали только name — проверять, что каждый обязательный атрибут есть в invalidCases (пустая строка и пробелы).
 - Валидации «сверх критериев» у backend-dev остаются без тестов: T-002 — проверка seq целым, default-ветка kind, trim у id/source (мутанты выживают). Прогонять мутант «убрать проверку» по каждой ветке fail(), не только по критериям.
 - T-002 мутанты (20 шт., все пойманы): только seq / только время / без сортировки / sort на месте / asOf «>=» / asOf по recordedAt / clamp 0 / inventory как приращение / depleted как no-op / implicit 0 / upp всегда из позиции / дробные packs / знак автосписания. Скрипт: python-замена строки в копии + `npx vitest run tests/domain/<file>`; зонд-тест класть внутрь копии (tests/probe), вне корня vitest не резолвит.
+- Списки полей «содержимого» (resolveEventWrite, CONTENT_KEYS в src/domain/journal.ts): тесты конфликта покрывают только поля из текста критерия. T-003: мутант «убрать value из сравнения» выжил (в К20 нет варианта inventory). Мутант «убрать ключ» прогонять по каждому полю; packs/unitsPerPack по отдельности эквивалентны (два из трёх с quantity задают третий), id — эквивалентен (вызывающий ищет по id).
+- Заявленный tester'ом счёт мутантов не совпадает с моим набором — свой набор гонять всегда (скрипт $S/mut.py: список (имя, было, стало), python-replace + vitest).
 
 ## Процесс / границы
 - Коммиты оркестратора смешивают статус задачи, docs/ и CLAUDE.md с работой исполнителя в одном коммите («T-NNN: failing tests ... Q-19»). Авторство по git не различить (все — Claude). Проверять файлы коммита по зонам: tests/ — tester, src/domain|server — backend-dev, docs/ и CLAUDE.md (с согласия владельца) — lead.
@@ -17,4 +19,8 @@
 - updateProduct молча игнорирует unit/id в патче; смена единицы — только changeUnit. В API (B-17) следить, чтобы unit не терялся молча.
 - Повторяющийся паттерн «лишнее поле молча отбрасывается»: createStockEvent (src/domain/journal.ts) — purchase с packs и quantity берёт packs; unitsPerPack без packs, value/packs у portion — выкидываются. В T-002 — пожелание (ошибка по атрибуту), решить до контракта B-16/B-17.
 - isInstant (src/domain/time.ts) через Date.UTC: годы 0000–0099 отвергаются (квирк Date.UTC), практически безвредно.
+- T-003: CONTENT_KEYS — явный список; новые поля StockEvent (operationId B-19/B-20, recognitionConfidence B-20) молча выпадут из сравнения. Предложена проверка типом: `as const satisfies readonly (keyof StockEvent)[]` + `[Exclude<keyof StockEvent, typeof CONTENT_KEYS[number]|'seq'|'recordedAt'>] extends [never]` (проверено: tsc падает при добавлении поля). Проверить в B-19/B-20.
+- resolveEventWrite сравнивает `===`: если репозиторий (B-03a) отдаёт NULL-колонки как null, а createStockEvent их опускает, каждый честный повтор станет конфликтом. Проверить маппинг в B-03a.
+- cancelledIds включает id несуществующих целей (К13) — потребителям (B-07, B-30) использовать membership, не size. Отмена «вперёд» по seq не определена — B-03a обязан проверять «цель записана раньше».
+- Неизвестные ключи входа (не из типа StockEventInput) createStockEvent по-прежнему молча отбрасывает — ловить в API (B-16/B-17).
 - journal.ts дублирует fail/isPositive из catalog.ts (чтобы не трогать catalog). Если появится третий модуль — вынести в общий хелпер отдельной задачей.
