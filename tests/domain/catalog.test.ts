@@ -46,7 +46,7 @@ function make(input: ProductInput = full): Product {
   return ok(createProduct(input));
 }
 
-/** Глубокая заморозка: любая мутация исходной позиции в строгом режиме бросит исключение. */
+/** Поверхностная заморозка (Object.freeze): присваивание в поле позиции в строгом режиме бросит исключение; позиция плоская, вложенных объектов нет. */
 function frozen(input: ProductInput = full): Product {
   const p = make(input);
   return Object.freeze({ ...p });
@@ -55,6 +55,8 @@ function frozen(input: ProductInput = full): Product {
 // Недопустимые значения из К4: [описание, атрибут, патч/поля].
 const invalidCases: Array<[string, string, Record<string, unknown>]> = [
   ['пустое название', 'name', { name: '' }],
+  ['пустая торговая упаковка', 'packName', { packName: '' }],
+  ['торговая упаковка из пробелов', 'packName', { packName: '   ' }],
   ['коэффициент 0', 'unitsPerPack', { unitsPerPack: 0 }],
   ['коэффициент -1', 'unitsPerPack', { unitsPerPack: -1 }],
   ['коэффициент NaN', 'unitsPerPack', { unitsPerPack: Number.NaN }],
@@ -330,6 +332,24 @@ describe('T-001 К18: решает последнее событие по вре
       ev('e2', 2, '2026-10-11T12:00:00.000Z', 'inactive', 'user_button'),
     ];
     expect(isActive(events)).toBe(true);
+  });
+
+  it('T-001 К18: больший seq, но более раннее время (задним числом) — решает время, неактивна', () => {
+    const events = [
+      ev('e5', 5, '2026-10-12T12:00:00.000Z', 'inactive', 'user_button'),
+      ev('e6', 6, '2026-10-12T10:00:00.000Z', 'active', 'purchase'),
+    ];
+    expect(isActive(events)).toBe(false);
+    expect(isActive([...events].reverse())).toBe(false);
+  });
+
+  it('T-001 К18: больший seq, но более раннее время — зеркально, активна', () => {
+    const events = [
+      ev('e5', 5, '2026-10-12T12:00:00.000Z', 'active', 'user_restore'),
+      ev('e6', 6, '2026-10-12T10:00:00.000Z', 'inactive', 'auto_archive'),
+    ];
+    expect(isActive(events)).toBe(true);
+    expect(isActive([...events].reverse())).toBe(true);
   });
 
   it('T-001 К18: вход не мутируется (порядок массива сохраняется)', () => {
