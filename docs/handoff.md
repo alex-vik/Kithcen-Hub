@@ -25,7 +25,6 @@
 
 ## Отложенные мелочи
 
-- Unit-тесты на `diffProduct` / `newProductAttrs` — когда tester следующий раз в `tests/unit`.
 - Тест на `updateProduct` с несуществующим id — в B-17.
 - Unit-тест на `stockEventValues`; устаревший комментарий `src/server/db/index.ts:165`.
 - Предложение владельцу (не решено): облегчить поток для мелких задач (тесты+реализация одним агентом, reviewer только для ядра) — правка CLAUDE.md.
