@@ -7,6 +7,8 @@ import type { Params } from './params.ts';
 export type { Params } from './params.ts';
 export { defaultParams } from './params.ts';
 
+type Instant = Temporal.Instant;
+
 export type Product = {
   id: string;
   name: string;
@@ -94,16 +96,22 @@ export function newProductRow(
 }
 
 // T-002, T-003: журнал остатка (BR-01, BR-03, BR-15; ADR-003 раздел 1).
-export const stockEventTypes = ['purchase', 'used', 'ran_out', 'recount'] as const;
+export const stockEventTypes = ['purchase', 'used', 'ran_out', 'recount', 'cancel'] as const;
 export type StockEventType = (typeof stockEventTypes)[number];
 
-export type StockFoldEvent = { id: string; type: StockEventType; qty: number | null; occurredAt: number; seq: number };
+export type StockFoldEvent = { id: string; type: StockEventType; qty: number | null; occurredAt: number; seq: number; targetId?: string | null };
 export type StockStep = { eventId: string; before: number; after: number };
 
 // BR-01: остаток — свёртка событий по (occurredAt, seq). «Пересчитал» и «закончилось» задают остаток, покупка прибавляет, «использовал» вычитает.
 // Минус допустим (BR-15): проверок остатка нет.
+// T-004, BR-02, ADR-003 раздел 2: действующая отмена аннулирует цель; аннулированное и сами отмены в шаги не попадают.
+// Цель всегда записана раньше отмены (меньший seq), поэтому идём от новых к старым.
 export function foldStock(events: readonly StockFoldEvent[]): { balance: number; steps: StockStep[] } {
-  const sorted = [...events].sort((a, b) => a.occurredAt - b.occurredAt || a.seq - b.seq);
+  const annulled = new Set<string>();
+  for (const e of [...events].sort((a, b) => b.seq - a.seq)) {
+    if (e.type === 'cancel' && !annulled.has(e.id) && e.targetId) annulled.add(e.targetId);
+  }
+  const sorted = events.filter((e) => e.type !== 'cancel' && !annulled.has(e.id)).sort((a, b) => a.occurredAt - b.occurredAt || a.seq - b.seq);
   let balance = 0;
   const steps = sorted.map((e) => {
     const before = balance;
@@ -120,6 +128,7 @@ export function foldStock(events: readonly StockFoldEvent[]): { balance: number;
 export function validateStockEventInput(input: Record<string, unknown>): ValidationResult {
   const errors: { field: string }[] = [];
   const { type, qty } = input;
+  if (type === 'cancel' && (typeof input.targetId !== 'string' || input.targetId === '')) errors.push({ field: 'targetId' });
   if (typeof input.id !== 'string' || input.id === '') errors.push({ field: 'id' });
   if (typeof type !== 'string' || !(stockEventTypes as readonly string[]).includes(type)) {
     errors.push({ field: 'type' });
@@ -133,8 +142,10 @@ export function validateStockEventInput(input: Record<string, unknown>): Validat
   return errors.length === 0 ? { ok: true } : { ok: false, errors };
 }
 
-// T-003 К6, К7 (5.2): количество для записи из проверенного ввода. «Закончилось» qty не хранит; «использовал» без qty — 1.
-export function stockEventQty(input: Record<string, unknown>): number | null {
-  if (input.type === 'ran_out') return null;
-  return (input.qty as number | undefined) ?? 1;
+// T-003 К6, К7 (5.2); T-004 Р-1, Р-2: значения колонок из проверенного ввода.
+// «Закончилось» и отмена qty не хранят; «использовал» без qty — 1; у отмены время клиента игнорируется (берётся now), targetId только у отмены.
+export function stockEventValues(input: Record<string, unknown>): { qty: number | null; occurredAt: Instant | undefined; targetId: string | null } {
+  if (input.type === 'cancel') return { qty: null, occurredAt: undefined, targetId: input.targetId as string };
+  const qty = input.type === 'ran_out' ? null : ((input.qty as number | undefined) ?? 1);
+  return { qty, occurredAt: input.occurredAt as Instant | undefined, targetId: null };
 }

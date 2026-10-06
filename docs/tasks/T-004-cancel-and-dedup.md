@@ -2,7 +2,7 @@
 
 | Поле | Значение |
 | --- | --- |
-| Статус | impl |
+| Статус | done |
 | Исполнитель | backend-dev |
 | Покрывает | FR-LOG-02, BR-02, BR-26, BR-01, BR-15, NFR-07, NFR-08; инварианты 1, 2, 6 |
 | Зависит от | T-003 (done) |
@@ -101,3 +101,7 @@
 - 2026-10-06 — analyst — черновик, статус draft
 - 2026-10-06 — delivery-lead — Р-1…Р-6 и миграция 0003 приняты; статус ready
 - 2026-10-06 — tester — тесты К1…К5 (stock-journal), обновлены T-003 К4/К9; падают из-за отсутствия реализации; статус impl
+- 2026-10-06 — backend-dev — отмены в foldStock (домен), дедупликация по id, миграция 0003; 125/125; статус review
+- 2026-10-06 — reviewer — CHANGES (цикл 1): ветвления по cancel в сервере (src/server/db/index.ts:160,169) — в домен. delivery-lead: проверка цели и SELECT-дедупликация в сервере приняты; unit-тесты foldStock с отменами — вместе с B-06. Статус → impl
+- 2026-10-06 — backend-dev — stockEventValues в домене (qty, occurredAt, targetId), ветвлений по типу в сервере нет; 125/125; статус review (повторное)
+- 2026-10-06 — reviewer — APPROVE (цикл 2). delivery-lead — статус done

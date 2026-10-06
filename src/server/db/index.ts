@@ -3,7 +3,7 @@ import { DatabaseSync } from 'node:sqlite';
 import { randomUUID } from 'node:crypto';
 import { readdirSync, readFileSync } from 'node:fs';
 import {
-  diffProduct, foldStock, newProductAttrs, newProductRow, productFields, stockEventQty, validateNewProduct, validateProductPatch,
+  diffProduct, foldStock, newProductAttrs, newProductRow, stockEventValues, validateNewProduct, validateProductPatch,
   validateStockEventInput,
 } from '../../domain/index.ts';
 import type { Params, Product, ProductField, StockEventType, StockFoldEvent } from '../../domain/index.ts';
@@ -115,6 +115,7 @@ export function updateProduct(
 }
 
 export type StockEvent = StockFoldEvent & {
+  targetId: string | null;
   productId: string;
   recordedAt: number;
 };
@@ -129,6 +130,7 @@ function toEvent(r: Record<string, unknown>): StockEvent {
     qty: r.qty as number | null,
     occurredAt: r.occurred_at as number,
     recordedAt: r.recorded_at as number,
+    targetId: r.target_id as string | null,
   };
 }
 
@@ -142,18 +144,25 @@ export function getStock(db: DatabaseSync, productId: string) {
 }
 
 // T-002, T-003: запись события. Время события не позже now (П-1); количество по правилам домена (5.2).
+// T-004: повтор с записанным id возвращает записанное событие до любой проверки ввода (BR-26, Р-3).
 export function recordStockEvent(db: DatabaseSync, input: Record<string, unknown>, now: Instant): EventResult {
+  const existing = typeof input.id === 'string' ? db.prepare('SELECT * FROM stock_events WHERE id = ?').get(input.id) : undefined;
+  if (existing) return { ok: true, event: toEvent(existing) };
   const v = validateStockEventInput(input);
   if (!v.ok) return v;
   const product = getProduct(db, input.productId);
   if (!product) return { ok: false, errors: [{ field: 'productId' }] };
-  const occurred = input.occurredAt as Instant | undefined;
+  const { qty, occurredAt: occurred, targetId } = stockEventValues(input);
+  // Р-1: цель отмены — событие этой же позиции.
+  if (targetId && !db.prepare('SELECT 1 FROM stock_events WHERE id = ? AND product_id = ?').get(targetId, product.id)) {
+    return { ok: false, errors: [{ field: 'targetId' }] };
+  }
   const occurredAt = Math.min(occurred?.epochMilliseconds ?? Infinity, now.epochMilliseconds);
   const row = db
     .prepare(
-      `INSERT INTO stock_events (id, product_id, type, qty, occurred_at, recorded_at)
-       VALUES (?, ?, ?, ?, ?, ?) RETURNING *`,
+      `INSERT INTO stock_events (id, product_id, type, qty, occurred_at, recorded_at, target_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING *`,
     )
-    .get(input.id as string, product.id, input.type as StockEventType, stockEventQty(input), occurredAt, now.epochMilliseconds);
+    .get(input.id as string, product.id, input.type as StockEventType, qty, occurredAt, now.epochMilliseconds, targetId);
   return { ok: true, event: toEvent(row as Record<string, unknown>) };
 }
