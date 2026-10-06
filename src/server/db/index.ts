@@ -3,8 +3,8 @@ import { DatabaseSync } from 'node:sqlite';
 import { randomUUID } from 'node:crypto';
 import { readdirSync, readFileSync } from 'node:fs';
 import {
-  diffProduct, foldStock, newProductAttrs, productFields, stockEventValues, validateNewProduct, validateProductPatch,
-  validateStockEventInput, validateUnitChange,
+  diffProduct, foldStock, newProductAttrs, newProductRow, productFields, stockEventQty, validateNewProduct, validateProductPatch,
+  validateStockEventInput,
 } from '../../domain/index.ts';
 import type { Params, Product, ProductField, StockEventType, StockFoldEvent } from '../../domain/index.ts';
 
@@ -32,19 +32,6 @@ export function openDb(path: string): DatabaseSync {
   return db;
 }
 
-// Поле домена → колонка. Порядок — порядок атрибутов карточки.
-const columns: Record<ProductField, string> = {
-  name: 'name',
-  category: 'category',
-  writeOffType: 'write_off_type',
-  consumptionUnit: 'consumption_unit',
-  packageName: 'package_name',
-  packageFactor: 'package_factor',
-  norm: 'norm',
-  lowStockThreshold: 'low_stock_threshold',
-  portion: 'portion',
-};
-
 type Instant = Temporal.Instant;
 type Result = { ok: true; product: Product } | { ok: false; errors: { field: string }[] };
 
@@ -53,13 +40,8 @@ function toProduct(r: Record<string, unknown>): Product {
     id: r.id as string,
     name: r.name as string,
     category: r.category as string | null,
-    writeOffType: r.write_off_type as string | null,
-    consumptionUnit: r.consumption_unit as string,
-    packageName: r.package_name as string | null,
-    packageFactor: r.package_factor as number | null,
-    norm: r.norm as number | null,
-    lowStockThreshold: r.low_stock_threshold as number | null,
-    portion: r.portion as number | null,
+    unit: r.unit as string,
+    minimum: r.minimum as number | null,
     active: r.active === 1,
   };
 }
@@ -92,13 +74,17 @@ const insertChange = (db: DatabaseSync, productId: string, at: Instant, kind: st
 export function createProduct(db: DatabaseSync, input: Record<string, unknown>, at: Instant, params: Params): Result {
   const v = validateNewProduct(input, params);
   if (!v.ok) return v;
-  const values = Object.fromEntries(productFields.map((f) => [f, input[f] ?? null]));
   const id = randomUUID();
+  const row = newProductRow(input, params);
   inTransaction(db, () => {
-    db.prepare(
-      `INSERT INTO products (id, ${productFields.map((f) => columns[f]).join(', ')}, active, created_at)
-       VALUES (?, ${productFields.map(() => '?').join(', ')}, 1, ?)`,
-    ).run(id, ...productFields.map((f) => values[f] as string | number | null), at.epochMilliseconds);
+    db.prepare('INSERT INTO products (id, name, category, unit, minimum, active, created_at) VALUES (?, ?, ?, ?, ?, 1, ?)').run(
+      id,
+      row.name,
+      row.category,
+      row.unit,
+      row.minimum,
+      at.epochMilliseconds,
+    );
     insertChange(db, id, at, 'create', null, newProductAttrs(input));
   });
   return { ok: true, product: getProduct(db, id) as Product };
@@ -115,14 +101,11 @@ export function updateProduct(
   if (!v.ok) return v;
   const current = getProduct(db, id);
   if (!current) return { ok: false, errors: [{ field: 'id' }] };
-  const hasEvents = db.prepare('SELECT 1 FROM stock_events WHERE product_id = ? LIMIT 1').get(current.id) !== undefined;
-  const u = validateUnitChange(current, patch, hasEvents);
-  if (!u.ok) return u;
   const { before, after } = diffProduct(current, patch);
   const changed = Object.keys(after) as ProductField[];
   if (changed.length === 0) return { ok: true, product: current };
   inTransaction(db, () => {
-    db.prepare(`UPDATE products SET ${changed.map((f) => `${columns[f]} = ?`).join(', ')} WHERE id = ?`).run(
+    db.prepare(`UPDATE products SET ${changed.map((f) => `${f} = ?`).join(', ')} WHERE id = ?`).run(
       ...changed.map((f) => after[f] as string | number | null),
       current.id,
     );
@@ -133,8 +116,6 @@ export function updateProduct(
 
 export type StockEvent = StockFoldEvent & {
   productId: string;
-  packages: number | null;
-  packageFactor: number | null;
   recordedAt: number;
 };
 type EventResult = { ok: true; event: StockEvent } | { ok: false; errors: { field: string }[] };
@@ -146,8 +127,6 @@ function toEvent(r: Record<string, unknown>): StockEvent {
     productId: r.product_id as string,
     type: r.type as StockEventType,
     qty: r.qty as number | null,
-    packages: r.packages as number | null,
-    packageFactor: r.package_factor as number | null,
     occurredAt: r.occurred_at as number,
     recordedAt: r.recorded_at as number,
   };
@@ -162,21 +141,19 @@ export function getStock(db: DatabaseSync, productId: string) {
   return getProduct(db, productId) ? foldStock(getStockEvents(db, productId)) : null;
 }
 
-// T-002: запись события. Время события не позже now (П-1); коэффициент покупки — из ввода, иначе позиции (Р-2).
+// T-002, T-003: запись события. Время события не позже now (П-1); количество по правилам домена (5.2).
 export function recordStockEvent(db: DatabaseSync, input: Record<string, unknown>, now: Instant): EventResult {
   const v = validateStockEventInput(input);
   if (!v.ok) return v;
   const product = getProduct(db, input.productId);
   if (!product) return { ok: false, errors: [{ field: 'productId' }] };
-  const values = stockEventValues(input, product.packageFactor);
-  if (!values.ok) return values;
   const occurred = input.occurredAt as Instant | undefined;
   const occurredAt = Math.min(occurred?.epochMilliseconds ?? Infinity, now.epochMilliseconds);
   const row = db
     .prepare(
-      `INSERT INTO stock_events (id, product_id, type, qty, packages, package_factor, occurred_at, recorded_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?) RETURNING *`,
+      `INSERT INTO stock_events (id, product_id, type, qty, occurred_at, recorded_at)
+       VALUES (?, ?, ?, ?, ?, ?) RETURNING *`,
     )
-    .get(input.id as string, product.id, input.type as StockEventType, values.qty, values.packages, values.packageFactor, occurredAt, now.epochMilliseconds);
+    .get(input.id as string, product.id, input.type as StockEventType, stockEventQty(input), occurredAt, now.epochMilliseconds);
   return { ok: true, event: toEvent(row as Record<string, unknown>) };
 }

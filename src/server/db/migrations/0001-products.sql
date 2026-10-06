@@ -1,15 +1,10 @@
--- T-001 (FR-CAT-01, FR-CAT-02, FR-CAT-08; ADR-003 раздел 4). Остатка в products нет (инвариант 1).
+-- T-001, T-003 (FR-CAT-01, FR-CAT-02, FR-CAT-07; ADR-003 раздел 4). Остатка в products нет (инвариант 1).
 CREATE TABLE products (
   id TEXT PRIMARY KEY,
   name TEXT NOT NULL,
   category TEXT,
-  write_off_type TEXT,
-  consumption_unit TEXT NOT NULL,
-  package_name TEXT,
-  package_factor REAL,
-  norm REAL,
-  low_stock_threshold REAL,
-  portion REAL,
+  unit TEXT NOT NULL,
+  minimum REAL,
   active INTEGER NOT NULL DEFAULT 1,
   created_at INTEGER NOT NULL
 );

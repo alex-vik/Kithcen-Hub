@@ -1,14 +1,12 @@
-// Параметры домена (ADR-004, «Каталоги»). T-001, раздел 15 спеки.
+// Параметры домена (ADR-004, «Каталоги»). T-001, T-003, раздел 15 спеки.
 export type Params = {
-  suggestedPortionShare: number;
-  consumptionUnits: readonly string[];
+  countUnits: readonly string[];
   productCategories: readonly string[];
 };
 
-// Раздел 15 спеки: значения по умолчанию.
+// Раздел 15 спеки: значения по умолчанию. Единица по умолчанию — первая из countUnits.
 export const defaultParams: Params = {
-  suggestedPortionShare: 1.0,
-  consumptionUnits: ['г', 'мл', 'шт'],
+  countUnits: ['шт', 'пачка', 'бутылка', 'банка', 'пакет', 'упаковка'],
   productCategories: [
     'Молочное и яйца', 'Мясо и рыба', 'Овощи и фрукты', 'Хлеб и выпечка', 'Крупы и макароны',
     'Консервы и соусы', 'Специи и бакалея', 'Заморозка', 'Напитки', 'Сладкое и снеки', 'Бытовое', 'Другое',

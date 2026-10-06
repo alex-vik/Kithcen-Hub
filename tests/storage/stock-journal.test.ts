@@ -120,7 +120,7 @@ describe('T-003 К9: недопустимый ввод события откло
 });
 
 describe('T-002 К16 (T-003): seq и время события', () => {
-  test('T-003 К8: seq растёт, occurred_at по умолчанию = часы, recorded_at = часы', () => {
+  test('T-003 К8: seq растёт, occurred_at по умолчанию = часы, recorded_at = часы (по П-1)', () => {
     const now = at('2026-10-08T12:00:00Z');
     const p = mk();
     rec(p.id, { type: 'used', qty: 1 }, now);
@@ -130,7 +130,7 @@ describe('T-002 К16 (T-003): seq и время события', () => {
     expect(ev).toHaveLength(3);
     expect(ev[0]!.seq).toBeLessThan(ev[1]!.seq);
     expect(ev[1]!.seq).toBeLessThan(ev[2]!.seq);
-    expect(ev.map((e) => e.occurredAt)).toEqual([ms('2026-10-08T12:00:00Z'), ms('2026-10-08T15:00:00Z'), ms('2026-10-05T08:00:00Z')]);
+    expect(ev.map((e) => e.occurredAt)).toEqual([ms('2026-10-08T12:00:00Z'), ms('2026-10-08T12:00:00Z'), ms('2026-10-05T08:00:00Z')]);
     expect(ev.map((e) => e.recordedAt)).toEqual([now.epochMilliseconds, now.epochMilliseconds, now.epochMilliseconds]);
   });
 });

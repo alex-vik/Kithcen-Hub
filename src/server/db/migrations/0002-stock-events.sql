@@ -1,12 +1,10 @@
--- T-002 (BR-01, BR-02, NFR-08; ADR-003 раздел 1). Остатка нет ни в какой колонке (инвариант 1).
+-- T-002, T-003 (BR-01, BR-02, NFR-08; ADR-003 раздел 1). Остатка нет ни в какой колонке (инвариант 1).
 CREATE TABLE stock_events (
   seq INTEGER PRIMARY KEY AUTOINCREMENT,
   id TEXT NOT NULL UNIQUE,
   product_id TEXT NOT NULL REFERENCES products(id),
   type TEXT NOT NULL,
   qty REAL,
-  packages REAL,
-  package_factor REAL,
   occurred_at INTEGER NOT NULL,
   recorded_at INTEGER NOT NULL
 );
