@@ -1,4 +1,10 @@
 node_modules/
+dist/
+data/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+.vitest/
 .env
 *.log
 .claude/agent-memory-local/

@@ -1,0 +1,11 @@
+{
+  // PWA (ADR-001, ADR-004): DOM, сборка через Vite.
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "module": "preserve",
+    "moduleResolution": "bundler",
+    "lib": ["esnext", "dom"],
+    "types": ["vite/client"]
+  },
+  "include": ["src/web/**/*.ts"]
+}

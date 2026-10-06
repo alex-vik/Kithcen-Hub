@@ -1,0 +1,9 @@
+{
+  // Чистый домен (ADR-004, NFR-16): без типов Node и DOM.
+  // Импорт node:*, process, таймеров или window в src/domain — ошибка компиляции.
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "types": []
+  },
+  "include": ["src/domain/**/*.ts"]
+}

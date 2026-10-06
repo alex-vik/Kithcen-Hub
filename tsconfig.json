@@ -1,0 +1,15 @@
+{
+  // Серверная сторона, тесты и конфиги сборки — с типами Node (ADR-001, ADR-004).
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "types": ["node"]
+  },
+  "include": [
+    "src/domain/**/*.ts",
+    "src/server/**/*.ts",
+    "src/smoke.test.ts",
+    "tests/**/*.ts",
+    "vite.config.ts",
+    "vitest.config.ts"
+  ]
+}

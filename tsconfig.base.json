@@ -1,0 +1,18 @@
+{
+  // Общие опции для всех проектов (ADR-001). Исполнение — Node type stripping и Vite,
+  // tsc только проверяет типы, поэтому noEmit и только стираемый синтаксис.
+  "compilerOptions": {
+    "target": "esnext",
+    "module": "nodenext",
+    "lib": ["esnext"],
+    "types": [],
+    "strict": true,
+    "noEmit": true,
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "erasableSyntaxOnly": true,
+    "noUncheckedIndexedAccess": true,
+    "noFallthroughCasesInSwitch": true,
+    "skipLibCheck": true
+  }
+}
