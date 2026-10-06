@@ -85,7 +85,6 @@ describe('T-003 К9: недопустимый ввод события откло
     ['тип «portion»', { type: 'portion', qty: 1 }, 'type'],
     ['тип «auto_writeoff»', { type: 'auto_writeoff', qty: 1 }, 'type'],
     ['тип «inventory»', { type: 'inventory', qty: 1 }, 'type'],
-    ['тип «cancel»', { type: 'cancel' }, 'type'],
     ['покупка без количества', { type: 'purchase' }, 'qty'],
     ['покупка 0', { type: 'purchase', qty: 0 }, 'qty'],
     ['покупка −1', { type: 'purchase', qty: -1 }, 'qty'],
@@ -182,5 +181,139 @@ describe('T-002 К22 (T-003): неактивная позиция принима
     expect(balanceOf(p.id)).toBe(6);
     expect(getProduct(db, p.id)?.active).toBe(false);
     expect(changesOf(db, p.id)).toHaveLength(1);
+  });
+});
+
+// --- T-004: отмена и повтор (BR-02, BR-26) ---
+const T0 = at('2026-10-06T12:00:00Z');
+const cancel = (id: string, targetId: unknown, productId: string) =>
+  recordStockEvent(db, { id, productId, type: 'cancel', targetId }, T0);
+function milkJournal() {
+  const p = mk();
+  const rr = (id: string, input: Record<string, unknown>) => {
+    const r = recordStockEvent(db, { id, productId: p.id, ...input }, NOW);
+    if (!r.ok) throw new Error(JSON.stringify(r.errors));
+  };
+  rr('e1', { type: 'purchase', qty: 6, occurredAt: at('2026-10-06T08:00:00Z') });
+  rr('e2', { type: 'used', qty: 1, occurredAt: at('2026-10-06T09:00:00Z') });
+  return p;
+}
+
+describe('T-004 К1: отмена отметки возвращает остаток как без неё', () => {
+  test('T-004 К1: отмена «использовал» — остаток 6, три события, e2 не изменён', () => {
+    const p = milkJournal();
+    const e2 = getStockEvents(db, p.id).find((e) => e.id === 'e2');
+    expect(cancel('c1', 'e2', p.id).ok).toBe(true);
+    expect(balanceOf(p.id)).toBe(6);
+    const ev = getStockEvents(db, p.id);
+    expect(ev).toHaveLength(3);
+    expect(ev.find((e) => e.id === 'e2')).toEqual(e2);
+    expect(ev.find((e) => e.id === 'c1')).toEqual(expect.objectContaining({
+      type: 'cancel', targetId: 'e2', qty: null,
+      occurredAt: T0.epochMilliseconds, recordedAt: T0.epochMilliseconds,
+    }));
+  });
+  test('T-004 К1: отмена покупки — остаток −1 без ошибки (BR-15)', () => {
+    const p = milkJournal();
+    expect(cancel('c1', 'e1', p.id).ok).toBe(true);
+    expect(balanceOf(p.id)).toBe(-1);
+  });
+});
+
+describe('T-004 К2: отмена события-значения — остаток как без якоря', () => {
+  test('T-004 К2: отмена «пересчитал» — остаток 4, в шагах нет r1 и отмены', () => {
+    const p = mk();
+    rec(p.id, { type: 'purchase', qty: 6, occurredAt: at('2026-10-03T10:00:00Z') });
+    rec(p.id, { type: 'used', qty: 1, occurredAt: at('2026-10-04T08:00:00Z') });
+    const r1 = recordStockEvent(db, { id: 'r1', productId: p.id, type: 'recount', qty: 3, occurredAt: at('2026-10-04T21:00:00Z') }, NOW);
+    expect(r1.ok).toBe(true);
+    rec(p.id, { type: 'used', qty: 1, occurredAt: at('2026-10-05T09:00:00Z') });
+    expect(balanceOf(p.id)).toBe(2);
+    expect(cancel('c1', 'r1', p.id).ok).toBe(true);
+    const stock = getStock(db, p.id)!;
+    expect(stock.balance).toBe(4);
+    expect(stock.steps.map((s) => s.eventId)).not.toContain('r1');
+    expect(stock.steps.map((s) => s.eventId)).not.toContain('c1');
+    expect(stock.steps).toHaveLength(3);
+  });
+  test('T-004 К2: отмена «закончилось» — 2, после отмены 5', () => {
+    const p = mk();
+    rec(p.id, { type: 'purchase', qty: 3, occurredAt: at('2026-10-03T10:00:00Z') });
+    recordStockEvent(db, { id: 'ro', productId: p.id, type: 'ran_out', occurredAt: at('2026-10-04T10:00:00Z') }, NOW);
+    rec(p.id, { type: 'purchase', qty: 2, occurredAt: at('2026-10-05T10:00:00Z') });
+    expect(balanceOf(p.id)).toBe(2);
+    expect(cancel('c1', 'ro', p.id).ok).toBe(true);
+    expect(balanceOf(p.id)).toBe(5);
+  });
+});
+
+describe('T-004 К3: отмена отмены восстанавливает событие', () => {
+  test('T-004 К3: c2 отменяет c1 — остаток 5, четыре события не изменены', () => {
+    const p = milkJournal();
+    cancel('c1', 'e2', p.id);
+    const before = rows(db, 'SELECT * FROM stock_events');
+    expect(cancel('c2', 'c1', p.id).ok).toBe(true);
+    expect(balanceOf(p.id)).toBe(5);
+    const after = rows(db, 'SELECT * FROM stock_events');
+    expect(after).toHaveLength(4);
+    expect(after.slice(0, 3)).toEqual(before);
+  });
+  test('T-004 К3: повторная отмена отменённого — без ошибки, остаток 6', () => {
+    const p = milkJournal();
+    cancel('c1', 'e2', p.id);
+    expect(cancel('c3', 'e2', p.id).ok).toBe(true);
+    expect(balanceOf(p.id)).toBe(6);
+  });
+});
+
+describe('T-004 К4: повтор с тем же id не создаёт дубль', () => {
+  test('T-004 К4: повтор покупки и повтор с другим содержимым возвращают первое событие', () => {
+    const p = mk();
+    const t12 = at('2026-10-06T12:00:00Z');
+    const first = recordStockEvent(db, { id: 'p1', productId: p.id, type: 'purchase', qty: 2 }, t12);
+    expect(first.ok).toBe(true);
+    const again = recordStockEvent(db, { id: 'p1', productId: p.id, type: 'purchase', qty: 2 }, at('2026-10-06T12:05:00Z'));
+    const other = recordStockEvent(db, { id: 'p1', productId: p.id, type: 'used', qty: 5 }, at('2026-10-06T12:05:00Z'));
+    for (const r of [again, other]) {
+      expect(r.ok).toBe(true);
+      if (r.ok && first.ok) expect(r.event).toEqual(first.event);
+    }
+    if (again.ok) expect(again.event).toEqual(expect.objectContaining({
+      type: 'purchase', qty: 2, recordedAt: t12.epochMilliseconds,
+    }));
+    expect(rows(db, `SELECT * FROM stock_events WHERE id = 'p1'`)).toHaveLength(1);
+    expect(balanceOf(p.id)).toBe(2);
+  });
+  test('T-004 К4: повтор отмены — одна строка, остаток не меняется', () => {
+    const p = milkJournal();
+    expect(cancel('c1', 'e2', p.id).ok).toBe(true);
+    expect(cancel('c1', 'e2', p.id).ok).toBe(true);
+    expect(rows(db, `SELECT * FROM stock_events WHERE id = 'c1'`)).toHaveLength(1);
+    expect(balanceOf(p.id)).toBe(6);
+  });
+});
+
+describe('T-004 К5: недопустимая отмена отклоняется по полю без записи', () => {
+  test.each<[string, string]>([
+    ['без targetId', 'targetId'],
+    ['несуществующая цель', 'targetId'],
+    ['цель — событие другой позиции', 'targetId'],
+    ['несуществующая позиция', 'productId'],
+  ])('T-004 К5: %s', (name, field) => {
+    const milkP = mk();
+    const bread = mk({ ...milk, name: 'Хлеб', unit: 'шт' });
+    rec(milkP.id, { type: 'purchase', qty: 1 });
+    recordStockEvent(db, { id: 'b1', productId: bread.id, type: 'purchase', qty: 1 }, NOW);
+    const before = rows(db, 'SELECT * FROM stock_events');
+    const input: Record<string, unknown> = { id: 'bad-c', productId: milkP.id, type: 'cancel' };
+    if (name === 'несуществующая цель') input.targetId = 'no-such';
+    if (name.startsWith('цель')) input.targetId = 'b1';
+    if (name === 'несуществующая позиция') { input.productId = 'no-such'; input.targetId = 'b1'; }
+    const r = recordStockEvent(db, input, NOW);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errors.map((e) => e.field)).toContain(field);
+    expect(rows(db, 'SELECT * FROM stock_events')).toEqual(before);
+    expect(balanceOf(milkP.id)).toBe(1);
+    expect(balanceOf(bread.id)).toBe(1);
   });
 });

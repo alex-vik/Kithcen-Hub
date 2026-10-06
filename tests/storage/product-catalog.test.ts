@@ -114,7 +114,7 @@ describe('T-003 К4: старой модели нет в схеме (инвар�
   });
   test('T-003 К4: колонки stock_events — ровно перечень', () => {
     expect(colsOf('stock_events')).toEqual(
-      ['seq', 'id', 'product_id', 'type', 'qty', 'occurred_at', 'recorded_at'].sort(),
+      ['seq', 'id', 'product_id', 'type', 'qty', 'occurred_at', 'recorded_at', 'target_id'].sort(),
     );
   });
   test('T-003 К4: таблицы — только каталог и журналы', () => {

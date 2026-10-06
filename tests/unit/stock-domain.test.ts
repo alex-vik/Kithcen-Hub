@@ -91,7 +91,7 @@ const fieldsOf = (r: { ok: boolean; errors?: { field: string }[] }): string[] =>
   r.ok ? [] : (r.errors ?? []).map((e) => e.field);
 
 const bad: [string, Record<string, unknown>, string][] = [
-  ...['portion', 'auto_writeoff', 'inventory', 'cancel', 'foo'].map((t): [string, Record<string, unknown>, string] => [
+  ...['portion', 'auto_writeoff', 'inventory', 'foo'].map((t): [string, Record<string, unknown>, string] => [
     `тип «${t}»`, { type: t, qty: 1 }, 'type',
   ]),
   ['тип не задан', {}, 'type'],

@@ -59,8 +59,8 @@ describe('T-003 К4: старой модели нет в контракте до
     expect(defaultParams).not.toHaveProperty('suggestedPortionShare');
     expect(defaultParams).not.toHaveProperty('consumptionUnits');
   });
-  test('T-003 К4: перечень типов событий — ровно purchase, used, ran_out, recount', () => {
-    expect([...domain.stockEventTypes].sort()).toEqual(['purchase', 'ran_out', 'recount', 'used']);
+  test('T-003 К4: перечень типов событий — ровно purchase, used, ran_out, recount, cancel', () => {
+    expect([...domain.stockEventTypes].sort()).toEqual(['cancel', 'purchase', 'ran_out', 'recount', 'used']);
   });
   test('T-003 К3: умолчания — единицы счёта и 12 категорий', () => {
     expect(defaultParams.countUnits).toEqual(['шт', 'пачка', 'бутылка', 'банка', 'пакет', 'упаковка']);
