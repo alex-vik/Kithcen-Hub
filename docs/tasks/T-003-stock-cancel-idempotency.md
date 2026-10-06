@@ -2,7 +2,7 @@
 
 | Поле | Значение |
 | --- | --- |
-| Статус | ready |
+| Статус | impl |
 | Исполнитель | backend-dev |
 | Покрывает | BR-02, BR-26, FR-LOG-02 (доменная часть); затрагивает BR-01 (свёртка с отменами), BR-15, NFR-07, NFR-08 (лента остатка), NFR-16 |
 | Зависит от | T-001 (done): `Product`, `Result`; T-002 (done): `StockEvent`, `createStockEvent`, `stockBalance`, `stockLedger`, `isInstant` |
