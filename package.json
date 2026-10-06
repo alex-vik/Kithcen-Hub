@@ -5,7 +5,7 @@
   "description": "Домашний склад продуктов — личное PWA (см. docs/spec.md)",
   "type": "module",
   "engines": {
-    "node": ">=24.15.0"
+    "node": "^22.18.0 || ^24.0.0"
   },
   "scripts": {
     "test": "vitest run",
