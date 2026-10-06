@@ -2,7 +2,7 @@
 
 | Поле | Значение |
 | --- | --- |
-| Статус | review |
+| Статус | done |
 | Исполнитель | backend-dev |
 | Покрывает | FR-CAT-01, FR-CAT-02, FR-CAT-08, BR-03, BR-04, BR-05 |
 | Зависит от | — (каркас шага 0: ADR-001…005) |
@@ -211,3 +211,6 @@
 - 2026-10-06 — delivery-lead — К18 дополнен: название из одних пробелов отклоняется (решение команды); статус ready
 - 2026-10-06 — tester — тесты К1…К20 в tests/unit/product-domain.test.ts, tests/storage/product-catalog.test.ts; падают из-за отсутствия реализации (41 failed); статус tests → impl
 - 2026-10-06 — backend-dev — реализация в src/domain/index.ts, src/server/db/; 95/95 зелёные на Node 26 (на Node 22 красно — нет Temporal, дефект окружения); статус review
+- 2026-10-06 — reviewer — CHANGES (цикл 1): diff правки вынести в домен (ADR-004); пожелания: Params в params.ts, тип времени Temporal.Instant, в after создания не писать null-поля. Обрезка названия не вводится (команда); тест на несуществующий id — в B-17. Статус → impl
+- 2026-10-06 — backend-dev — правки по CHANGES: diffProduct и newProductAttrs в домене, params.ts, Temporal.Instant; 95/95 на Node 26; статус review (повторное ревью)
+- 2026-10-06 — reviewer — APPROVE (цикл 2); необязательное: убрать псевдоним fields (src/server/db/index.ts:44), unit-тесты diffProduct/newProductAttrs при следующей работе tester в tests/unit. delivery-lead — статус done
