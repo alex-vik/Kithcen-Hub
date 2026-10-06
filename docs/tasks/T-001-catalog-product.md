@@ -2,7 +2,7 @@
 
 | Поле | Значение |
 | --- | --- |
-| Статус | impl |
+| Статус | review |
 | Исполнитель | backend-dev |
 | Покрывает | FR-CAT-01, FR-CAT-02, FR-CAT-08, BR-03, BR-05; BR-04 — частично (см. «Не входит») |
 | Зависит от | — (шаг 0: ADR-001, ADR-002, ADR-003 приняты; ADR-004 — черновик) |
@@ -238,3 +238,4 @@
 - 2026-10-06 — delivery-lead — ВА-11 закрыт (а); введённая норма хранится для показа (К8, К9); статус ready.
 - 2026-10-06 — tester — 94 теста в tests/unit/catalog.*.test.ts, все падают с not implemented; статус tests.
 - 2026-10-06 — delivery-lead — патч {normPeriod: null} без normAmount при существующей норме → отказ 'norm_period'; статус impl.
+- 2026-10-06 — backend-dev — реализация в src/domain/{catalog,quantity}.ts, 120/120 зелёные; статус review.

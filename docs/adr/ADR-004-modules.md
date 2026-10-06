@@ -87,6 +87,7 @@ src/server ─────────────────┘  (значен
 | Файл | Что внутри | Задачи | Импортирует из домена |
 | --- | --- | --- | --- |
 | `config.ts` | Тип `DomainConfig` по группам и значение `defaultConfig` (раздел 6) | Первая задача с параметром (B-06) | — |
+| `result.ts` | `CommandResult` — результат команды (раздел 4.3); добавлено при B-00e по ревью | B-01 | — |
 | `quantity.ts` | `Milli`, пересчёт упаковок в тысячные доли расходной единицы, округление ввода (BR-03) | B-01 | — |
 | `time.ts` | `EpochMs`, перевод `Instant ↔ EpochMs`, `localDayOf`, `dayStart`, `dayEnd`, `closedDays`, `latestDue` (ADR-005) | B-02 (перевод), B-06 (сутки) | — |
 | `catalog.ts` | `Product`, тип списания, активность, запись `product_log` (ADR-003, раздел 6) | B-01, B-12 | `quantity` |

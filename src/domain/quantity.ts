@@ -13,7 +13,12 @@ export type Milli = number;
  * Результат всегда целое число. T-001 К16, К17.
  */
 export function toMilli(amount: number): Milli {
-  throw new Error('not implemented: T-001');
+  return roundHalfAway(amount * 1000);
+}
+
+/** Округление к ближайшему целому, половина — от нуля. */
+export function roundHalfAway(x: number): number {
+  return Math.sign(x) * Math.round(Math.abs(x));
 }
 
 /**
@@ -22,5 +27,5 @@ export function toMilli(amount: number): Milli {
  * Одно округление произведения, половина — от нуля. T-001 К15–К17, BR-03, BR-04.
  */
 export function packsToMilli(packs: number, packSizeMilli: Milli): Milli {
-  throw new Error('not implemented: T-001');
+  return roundHalfAway(packs * packSizeMilli);
 }
