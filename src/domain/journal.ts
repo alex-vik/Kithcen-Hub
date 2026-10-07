@@ -204,9 +204,16 @@ export type WriteOutcome =
   | { outcome: 'new' | 'repeat' | 'done'; event: StockEvent }
   | { outcome: 'conflict'; event: StockEvent; id: string };
 
-const CONTENT_KEYS = [
+/** T-004 К31: поля содержимого — все поля StockEvent, кроме seq и recordedAt. */
+export const CONTENT_KEYS = [
   'id', 'productId', 'kind', 'quantity', 'value', 'packs', 'unitsPerPack', 'targetId', 'occurredAt', 'source',
-] as const;
+] as const satisfies readonly (keyof StockEvent)[];
+
+// Новое поле StockEvent, которого нет в CONTENT_KEYS, seq и recordedAt, — ошибка типов (never не присвоить true).
+const contentKeysComplete: [Exclude<keyof StockEvent, (typeof CONTENT_KEYS)[number] | 'seq' | 'recordedAt'>] extends [never]
+  ? true
+  : never = true;
+void contentKeysComplete;
 
 /** T-003 К18-К20, BR-26, ADR-003 §8: содержимое — все атрибуты, кроме seq и recordedAt. */
 export function resolveEventWrite(recorded: StockEvent | undefined, incoming: StockEvent): WriteOutcome {

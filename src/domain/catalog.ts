@@ -45,8 +45,12 @@ export type StateEvent = {
   seq: number;
   productId: string;
   occurredAt: Instant;
+  /** T-004 К32: когда событие записано; на активность не влияет. */
+  recordedAt: Instant;
   state: 'active' | 'inactive';
   reason: 'user_button' | 'auto_archive' | 'purchase' | 'user_restore';
+  /** T-004 К32: ссылка на событие-повод (например, покупку); необязательна. */
+  refEventId?: string;
 };
 
 /** Параметры раздела 15 спеки. */
