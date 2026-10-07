@@ -23,3 +23,72 @@ export function isInstant(v: unknown): v is Instant {
     t.getUTCHours() === h && t.getUTCMinutes() === mi && t.getUTCSeconds() === s
   );
 }
+
+// T-010, BR-27, NFR-14, ADR-005: сутки по поясу дома через Intl, без библиотек и без системных часов.
+
+const formatters = new Map<TimeZone, Intl.DateTimeFormat>();
+
+/** Местные «настенные» компоненты момента как UTC-миллисекунды (мс отбрасываются форматтером и восстанавливаются). */
+function wallMs(ms: number, timeZone: TimeZone): number {
+  let f = formatters.get(timeZone);
+  if (!f) {
+    f = new Intl.DateTimeFormat('en-CA', {
+      timeZone, hourCycle: 'h23', year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit',
+    });
+    formatters.set(timeZone, f);
+  }
+  const p: Record<string, number> = {};
+  for (const { type, value } of f.formatToParts(new Date(ms))) p[type] = Number(value);
+  const sub = ((ms % 1000) + 1000) % 1000;
+  return Date.UTC(p['year'] ?? 0, (p['month'] ?? 1) - 1, p['day'] ?? 1, p['hour'] ?? 0, p['minute'] ?? 0, p['second'] ?? 0, sub);
+}
+
+const offsetAt = (ms: number, timeZone: TimeZone): number => wallMs(ms, timeZone) - ms;
+const toInstant = (ms: number): Instant => new Date(ms).toISOString();
+const dayMs = (day: LocalDate): number => Date.parse(`${day}T00:00:00.000Z`);
+
+export function localDateOf(instant: Instant, timeZone: TimeZone): LocalDate {
+  return toInstant(wallMs(Date.parse(instant), timeZone)).slice(0, 10);
+}
+
+export function addDays(day: LocalDate, n: number): LocalDate {
+  return toInstant(dayMs(day) + n * 86_400_000).slice(0, 10);
+}
+
+/** Местное время суток D в UTC: из весеннего разрыва — первый момент после него, из осеннего повтора — первое вхождение. */
+export function localTimeOn(day: LocalDate, hhmm: string, timeZone: TimeZone): Instant {
+  const [h = 0, m = 0] = hhmm.split(':').map(Number);
+  const wall = dayMs(day) + (h * 60 + m) * 60_000;
+  const before = offsetAt(wall - 86_400_000, timeZone);
+  const after = offsetAt(wall + 86_400_000, timeZone);
+  const valid = [...new Set([before, after])].map((o) => wall - o).filter((t) => offsetAt(t, timeZone) === wall - t);
+  if (valid.length > 0) return toInstant(Math.min(...valid));
+  // разрыв: первый момент с новым смещением
+  let lo = wall - Math.max(before, after);
+  let hi = wall - Math.min(before, after);
+  while (hi - lo > 1) {
+    const mid = Math.floor((lo + hi) / 2);
+    if (offsetAt(mid, timeZone) === after) hi = mid;
+    else lo = mid;
+  }
+  return toInstant(hi);
+}
+
+/** `[00:00 суток D, 00:00 суток D+1)` в UTC. */
+export function dayBounds(day: LocalDate, timeZone: TimeZone): { start: Instant; end: Instant } {
+  return { start: localTimeOn(day, '00:00', timeZone), end: localTimeOn(addDays(day, 1), '00:00', timeZone) };
+}
+
+/** FR-CON-07, FR-CON-08: все D > cursor, чьи сутки завершены к `now` (наступило время автосписания D+1), по возрастанию. */
+export function pendingDays(
+  cursor: LocalDate,
+  now: Instant,
+  params: { timeZone: TimeZone; autoWriteoffTime: string },
+): LocalDate[] {
+  const out: LocalDate[] = [];
+  for (let d = addDays(cursor, 1); localTimeOn(addDays(d, 1), params.autoWriteoffTime, params.timeZone) <= now; d = addDays(d, 1)) {
+    out.push(d);
+  }
+  return out;
+}

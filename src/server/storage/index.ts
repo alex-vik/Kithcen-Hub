@@ -6,6 +6,7 @@ import type { SQLInputValue } from 'node:sqlite';
 import type { Product, StateEvent } from '../../domain/catalog.ts';
 import type { StockEvent } from '../../domain/journal.ts';
 import { isInstant } from '../../domain/time.ts';
+import type { LocalDate } from '../../domain/time.ts';
 
 export type WriteResult<E> =
   | { status: 'added'; event: E }
@@ -48,8 +49,13 @@ export type Storage = {
   productsChangedBetween(afterSeq: number, uptoSeq: number): string[];
   /** T-009: true только пока выполняется fn внешней или вложенной transaction. */
   inTransaction(): boolean;
+  /** T-010: наибольший день задачи в курсоре job_runs; undefined, если строк нет. */
+  lastJobDay(job: string): LocalDate | undefined;
+  /** T-010: отмечает сутки задачи; повтор той же пары не ошибка. */
+  markJobDay(job: string, day: LocalDate): void;
   /**
    * Несколько чтений и вставок атомарно; вложенный вызов входит в внешнюю транзакцию.
+   * Исключение вложенного вызова нельзя перехватывать во внешнем fn: SAVEPOINT нет, записи вложенного вызова останутся (T-010, ревью T-005).
    * Всё или ничего: исключение из fn откатывает транзакцию и пробрасывается дальше.
    * fn только синхронный: драйвер синхронный, async-функция завершилась бы после COMMIT (тип запрещает Promise).
    */
@@ -258,6 +264,13 @@ export function openStorage(options: StorageOptions): Storage {
       all('SELECT DISTINCT product_id FROM stock_event WHERE seq > ? AND seq <= ?', afterSeq, uptoSeq).map(
         (r) => r['product_id'] as string,
       ),
+    lastJobDay: (job) => {
+      const d = get('SELECT MAX(day) AS d FROM job_runs WHERE job = ?', job)?.['d'];
+      return typeof d === 'string' ? d : undefined;
+    },
+    markJobDay: (job, day) => {
+      db.prepare('INSERT INTO job_runs (job, day) VALUES (?, ?) ON CONFLICT DO NOTHING').run(job, day);
+    },
     inTransaction: () => depth > 0,
     transaction,
   };
