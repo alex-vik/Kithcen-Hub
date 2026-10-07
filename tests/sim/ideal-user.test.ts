@@ -47,6 +47,7 @@ describe('T-007 К14: отчёт сценария «идеальный поль�
       metricsStatus: 'предварительно (Q-19)',
       reality: 'без календаря гостей и отъездов (до B-05)',
       policy: 'оракул (заглушка до B-11)',
+      initialPurchase: 'начальная закупка 00:00 сутки 0 (стенд)',
       maxDivergence: 0,
       g2: { value: null, note: 'нет списка покупок до B-11' },
       calibrationQuestionsPerWeek: { value: null, note: 'нет калибровки до B-13' },

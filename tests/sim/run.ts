@@ -24,7 +24,6 @@ export type RunOptions = {
   facts?: readonly ConsumptionFact[];
   /** Свои моменты закупки; по умолчанию purchaseSchedule. */
   schedule?: readonly Instant[];
-  scenario?: string;
 };
 
 export type DayProduct = { demand: number; served: number; unmet: number; realEnd: number; knownEnd: number };
@@ -37,7 +36,7 @@ export type RunResult = {
   startDate: LocalDate;
   days: number;
   policyLabel: string;
-  markModel: string;
+  schedule: Instant[];
   productIds: string[];
   events: StockEvent[];
   purchases: PurchaseRecord[];
@@ -144,8 +143,8 @@ export function runScenario(opts: RunOptions): RunResult {
         if (d.packs === 0) continue;
         const product = productById.get(d.productId);
         if (!product) throw new Error(`политика вернула неизвестную позицию ${d.productId}`);
-        if (Number.isInteger(d.packs) && d.packs > 0) real.set(d.productId, stock(d.productId) + d.packs * product.unitsPerPack);
-        const e: RealEvent = { type: 'purchase', productId: d.productId, at: item.at, packs: d.packs, unitsPerPack: product.unitsPerPack, stockAfter: stock(d.productId) };
+        real.set(d.productId, stock(d.productId) + d.packs * product.unitsPerPack);
+        const e: RealEvent = { type: 'purchase', productId: d.productId, at: item.at, packs: d.packs, unitsPerPack: product.unitsPerPack };
         for (const m of marks.marks(e)) write(m);
         purchases.push({ productId: d.productId, at: item.at, packs: d.packs });
       }
@@ -158,7 +157,7 @@ export function runScenario(opts: RunOptions): RunResult {
       const cur = today.get(productId) ?? { demand: 0, served: 0, unmet: 0 };
       today.set(productId, { demand: cur.demand + quantity, served: cur.served + eaten, unmet: cur.unmet + quantity - eaten });
       if (quantity > eaten) unmet.push({ productId, at, quantity: quantity - eaten });
-      const e: RealEvent = { type: 'consumption', productId, at, demand: quantity, eaten, unmet: quantity - eaten, stockBefore: before, stockAfter: stock(productId) };
+      const e: RealEvent = { type: 'consumption', productId, at, demand: quantity, eaten, stockBefore: before, stockAfter: stock(productId) };
       for (const m of marks.marks(e)) write(m);
     } else if (item.date !== undefined) {
       const rec: Record<string, DayProduct> = {};
@@ -174,10 +173,10 @@ export function runScenario(opts: RunOptions): RunResult {
   }
 
   return {
-    scenario: opts.scenario ?? 'идеальный пользователь',
+    scenario: marks.name,
     seed, startDate, days,
     policyLabel: policy.label,
-    markModel: marks.name,
+    schedule: [...schedule],
     productIds: products.map((p) => p.id),
     events, purchases, unmet, daily, divergence, minRealStock,
   };
@@ -191,6 +190,8 @@ export type RunReport = {
   metricsStatus: string;
   reality: string;
   policy: string;
+  /** Пометка стенда: начальная закупка в 00:00 суток 0 (FR-CAT-07, К7), а не плановая суббота. */
+  initialPurchase: string;
   g1: G1Result;
   maxDivergence: number;
   g2: { value: number | null; note: string };
@@ -210,7 +211,8 @@ export function buildReport(run: RunResult): RunReport {
     metricsStatus: 'предварительно (Q-19)',
     reality: 'без календаря гостей и отъездов (до B-05)',
     policy: run.policyLabel,
-    g1: computeG1({ unmet: run.unmet, purchases: run.purchases, startDate: run.startDate, days: run.days }),
+    initialPurchase: run.schedule[0] === localToInstant(run.startDate, '00:00') ? 'начальная закупка 00:00 сутки 0 (стенд)' : 'нет',
+    g1: computeG1({ unmet: run.unmet, schedule: run.schedule, startDate: run.startDate, days: run.days }),
     maxDivergence: run.divergence.reduce((m, d) => Math.max(m, Math.abs(d.diff)), 0),
     g2: { value: null, note: 'нет списка покупок до B-11' },
     calibrationQuestionsPerWeek: { value: null, note: 'нет калибровки до B-13' },

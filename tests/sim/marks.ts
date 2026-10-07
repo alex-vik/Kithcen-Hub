@@ -1,7 +1,7 @@
 // T-007 К8, Р5: модель отметок — что из реальных фактов попадает в журнал системы.
 export type RealEvent =
-  | { type: 'purchase'; productId: string; at: string; packs: number; unitsPerPack: number; stockAfter: number }
-  | { type: 'consumption'; productId: string; at: string; demand: number; eaten: number; unmet: number; stockBefore: number; stockAfter: number };
+  | { type: 'purchase'; productId: string; at: string; packs: number; unitsPerPack: number }
+  | { type: 'consumption'; productId: string; at: string; demand: number; eaten: number; stockBefore: number; stockAfter: number };
 
 export type Mark = {
   productId: string;
@@ -24,7 +24,7 @@ export const idealUser: MarkModel = {
     }
     const out: Mark[] = [];
     if (e.eaten > 0) out.push({ productId: e.productId, kind: 'portion', quantity: e.eaten, occurredAt: e.at, recordedAt: e.at });
-    if (e.eaten > 0 && e.stockBefore > 0 && e.stockAfter === 0) {
+    if (e.eaten > 0 && e.stockAfter === 0) {
       out.push({ productId: e.productId, kind: 'depleted', occurredAt: e.at, recordedAt: e.at });
     }
     return out;
