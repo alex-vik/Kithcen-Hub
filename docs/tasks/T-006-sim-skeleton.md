@@ -141,3 +141,4 @@
 3. generateReality: принимает Pick<HomeProfile,'products'>; тест на другом startDate/days; починить комментарий reality.ts:3. Публичный вход для T-008 — rng.ts (К3) и generateReality.
 4. static.test.ts: дешёвое усиление — `new Date` без скобок, `Date()`, performance.now, crypto.getRandomValues/randomUUID, импорт `src/server` без слэша, .mts/.cts.
 5. config.ts: удалить неиспользуемый TIME_ZONE или пометить; USE_SIZE_CV, SLOW_USES_PER_PACK, SLOW_GAP_JITTER — параметры стенда, приняты. `whole` с max(1). Название теста reality.test.ts:63 поправить.
+6. Владелец 2026-10-07: корм собаки 40 г/сут (вместо 90). Поправить профиль после пунктов 1–5, перепрогнать К1, К2, К5, К6.
