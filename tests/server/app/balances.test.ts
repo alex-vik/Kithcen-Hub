@@ -48,8 +48,9 @@ describe('T-009 К17-кэш: правильность на одной БД, ша
     const p = pick();
     const before = stockBalance(db.storage.listStockEvents(p));
     put(db.storage, p, 'purchase', shift(valueTime(db.storage, p), -HOUR), { quantity: 777 });
-    expectMatchesReference(cache.all(), db.storage);
+    // balance() первым: обновление по знаку внутри balance() (без предшествующего all())
     expect(cache.balance(p)).toBe(before);
+    expectMatchesReference(cache.all(), db.storage);
   });
 
   it('T-009 К17-кэш.2: приращение позже последней инвентаризации — совпадает, остаток изменился на величину приращения', async () => {
@@ -57,8 +58,8 @@ describe('T-009 К17-кэш: правильность на одной БД, ша
     const p = pick();
     const before = stockBalance(db.storage.listStockEvents(p));
     put(db.storage, p, 'purchase', shift(valueTime(db.storage, p), HOUR), { quantity: 333 });
+    expect(cache.balance(p), 'balance() первым, до all()').toBe(before + 333);
     expectMatchesReference(cache.all(), db.storage);
-    expect(cache.balance(p)).toBe(before + 333);
     afterStep2 = before + 333;
   });
 
@@ -68,9 +69,9 @@ describe('T-009 К17-кэш: правильность на одной БД, ша
     const last = lastValueEvent(db.storage, p);
     if (!last) throw new Error('тест: нет значения-события');
     const cancel = put(db.storage, p, 'cancel', T0, { targetId: last.id });
-    expectMatchesReference(cache.all(), db.storage);
     const without = db.storage.listStockEvents(p).filter((e) => e.id !== last.id && e.id !== cancel.id);
-    expect(cache.balance(p)).toBe(stockBalance(without));
+    expect(cache.balance(p), 'balance() первым, до all()').toBe(stockBalance(without));
+    expectMatchesReference(cache.all(), db.storage);
     cancelId = cancel.id;
   });
 
@@ -78,8 +79,8 @@ describe('T-009 К17-кэш: правильность на одной БД, ша
     const cache = await getCache();
     const p = pick();
     put(db.storage, p, 'cancel', T0, { targetId: cancelId });
+    expect(cache.balance(p), 'balance() первым, до all()').toBe(afterStep2);
     expectMatchesReference(cache.all(), db.storage);
-    expect(cache.balance(p)).toBe(afterStep2);
   });
 
   it('T-009 К17-кэш.5: отмены автосписаний нескольких позиций одним recordSystemBatch на поддельных часах', async () => {
@@ -301,6 +302,34 @@ describe('T-009 Ш: инвалидация по знаку (ADR-003a §4.1.4)', 
     expect(c.calls).toHaveLength(ids.length);
     expect(sorted(c.calls)).toStrictEqual(sorted(ids));
     expectMatchesReference(got, db.storage);
+  }, SLOW);
+
+  it('T-009 Ш5: знак читается до пересборки — запись вторым соединением во время пересборки не теряется (ADR-003a §4.1.4.1)', async () => {
+    const [p, q] = take(2) as [string, string];
+    let fired = false;
+    let armed = false;
+    const wrapped: Narrow = {
+      ...db.storage,
+      listStockEvents: (id: string) => {
+        const r = db.storage.listStockEvents(id);
+        if (armed && !fired && id === p) {
+          fired = true;
+          const s2 = openSecond(db.path);
+          try { put(s2, p, 'purchase', shift(valueTime(s2, p), HOUR), { quantity: 9 }); } finally { s2.close(); }
+        }
+        return r; // содержимое до записи второго соединения
+      },
+    };
+    const cache = await makeCache(wrapped);
+    expectMatchesReference(cache.all(), db.storage);
+    put(db.storage, p, 'purchase', shift(valueTime(db.storage, p), HOUR), { quantity: 1 });
+    put(db.storage, q, 'purchase', shift(valueTime(db.storage, q), HOUR), { quantity: 1 });
+    armed = true;
+    cache.all(); // пересборка p; во время неё второе соединение пишет в p
+    expect(fired, 'запись второго соединения произошла во время пересборки').toBe(true);
+    armed = false;
+    expectMatchesReference(cache.all(), db.storage);
+    expect(cache.balance(p)).toBe(stockBalance(db.storage.listStockEvents(p)));
   }, SLOW);
 
   it('T-009 Ш3: журнал стал короче (подмена файла) — кэш сброшен, all() совпадает со свёрткой второй БД', async () => {

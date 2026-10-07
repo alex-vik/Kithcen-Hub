@@ -1,8 +1,9 @@
 // T-008 К16-К17 на полном журнале и T-009 К16-доп, К18 (путь (в) через кэш), К18-утро, К18-вывод.
 // Только npm run perf; в npm test не входит. ADR-003 §3 в редакции ADR-003a §6.2, Q-02.
-import { mkdtempSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { afterAll, describe, expect, it } from 'vitest';
 import { stockBalance } from '../../src/domain/journal.ts';
 import { openStorage } from '../../src/server/storage/index.ts';
@@ -177,6 +178,17 @@ describe('T-009 полный журнал', () => {
       lines.push('[T-009 К18-вывод] триггер D1 (ADR-003a §7)');
     }
     console.log(lines.join('\n'));
+    // vitest 5 не печатает console.log прошедших тестов: цифры дублируются в файл (каталог создаётся здесь)
+    const st = (xs: number[]) => ({ median: median(xs), p90: percentile(xs, 0.9), min: Math.min(...xs), max: Math.max(...xs) });
+    const outDir = join(dirname(fileURLToPath(import.meta.url)), '.out');
+    mkdirSync(outDir, { recursive: true });
+    writeFileSync(join(outDir, 'last.json'), JSON.stringify({
+      node: process.version, events: journal.events.length, products: journal.products.length, heavy: m.heavy,
+      thresholdMs: PERF.thresholdMs, generateMs: genMs, loadMs,
+      pathA_memory: st(mem), pathB_storage: st(sto), pathC_cache: m.v ? st(m.v) : null,
+      coldBuildMs: m.cold ?? null, warmAfterNightMs: m.warmAfterNight ?? null, morningAllMs: m.morning ?? null,
+      triggerD1: lines.some((l) => l.includes('триггер D1')), note: 'среда разработки, не целевой сервер (Q-02)',
+    }, null, 2));
     expect(lines.length).toBeGreaterThan(0);
   });
 });

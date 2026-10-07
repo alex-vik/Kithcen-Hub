@@ -34,6 +34,11 @@ describe('T-009 С1: maxStockSeq', () => {
     s.addStateEvent(state('p-a', 's1', T0, 'inactive', 'user_button'));
     s.addStateEvent(state('p-a', 's2', at('12', '10:00'), 'active', 'user_restore'));
     expect(s.maxStockSeq()).toBe(3);
+    // событий состояния больше, чем событий остатка: знак не должен брать MAX по объединению
+    s.addStateEvent(state('p-a', 's3', at('12', '11:00'), 'inactive', 'user_button'));
+    s.addStateEvent(state('p-a', 's4', at('12', '12:00'), 'active', 'user_restore'));
+    s.addStateEvent(state('p-a', 's5', at('12', '13:00'), 'inactive', 'user_button'));
+    expect(s.maxStockSeq()).toBe(3);
   });
 
   it('T-009 С1: повтор с тем же id (exists) и отказ (rejected) знак не меняют', () => {
