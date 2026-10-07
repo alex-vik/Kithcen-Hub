@@ -6,3 +6,6 @@ import type { Instant } from '../domain/time.ts';
 export interface Clock {
   now(): Instant;
 }
+
+/** T-005 К29, NFR-14: реальные часы; toISOString даёт канон YYYY-MM-DDTHH:mm:ss.sssZ. */
+export const systemClock: Clock = { now: () => new Date().toISOString() };

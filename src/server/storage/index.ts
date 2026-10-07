@@ -42,9 +42,16 @@ export type Storage = {
   listStockEvents(productId: string): StockEvent[];
   listStateEvents(productId: string): StateEvent[];
   hasStockEvents(productId: string): boolean;
-  /** Несколько чтений и вставок атомарно; вложенный вызов входит в внешнюю транзакцию. */
-  transaction<T>(fn: () => T): T;
+  /**
+   * Несколько чтений и вставок атомарно; вложенный вызов входит в внешнюю транзакцию.
+   * Всё или ничего: исключение из fn откатывает транзакцию и пробрасывается дальше.
+   * fn только синхронный: драйвер синхронный, async-функция завершилась бы после COMMIT (тип запрещает Promise).
+   */
+  transaction<T>(fn: () => T & SyncOnly<T>): T;
 };
+
+/** never для Promise: async-функцию в transaction передать нельзя. */
+type SyncOnly<T> = T extends PromiseLike<unknown> ? never : unknown;
 
 type Row = Record<string, unknown>;
 
@@ -66,7 +73,7 @@ function migrate(db: DatabaseSync, migrations: readonly string[]): void {
       db.exec(`PRAGMA user_version = ${v}`);
       db.exec('COMMIT');
     } catch (err) {
-      db.exec('ROLLBACK');
+      if (db.isTransaction) db.exec('ROLLBACK');
       throw err;
     }
   }
@@ -138,7 +145,7 @@ export function openStorage(options: StorageOptions): Storage {
   const pragma = (name: string, col = name): unknown => (get(`PRAGMA ${name}`) as Row)[col];
 
   let depth = 0;
-  function transaction<T>(fn: () => T): T {
+  function transaction<T>(fn: () => T & SyncOnly<T>): T {
     if (depth > 0) return fn();
     db.exec('BEGIN IMMEDIATE');
     depth = 1;
@@ -147,7 +154,7 @@ export function openStorage(options: StorageOptions): Storage {
       db.exec('COMMIT');
       return result;
     } catch (err) {
-      db.exec('ROLLBACK');
+      if (db.isTransaction) db.exec('ROLLBACK');
       throw err;
     } finally {
       depth = 0;
