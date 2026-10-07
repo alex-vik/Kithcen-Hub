@@ -1,4 +1,4 @@
-// T-004 К3/К4: файлы миграций NNNN_*.sql нумеруются подряд с 0001 (ADR-002).
+// T-004 К2 / ADR-002: файлы миграций NNNN_*.sql нумеруются подряд с 0001 (ADR-002).
 // Каталог миграций подменяется на уровне node:fs: реализация читает его только при openStorage без параметра migrations.
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -29,26 +29,26 @@ async function openDefault() {
   return openStorage({ path: ':memory:', busyTimeoutMs: 5000 });
 }
 
-describe('T-004 К3: нумерация файлов миграций подряд', () => {
-  it('T-004 К3: 0001, 0002 — открывается, user_version 2 (контроль подмены)', async () => {
+describe('T-004 К2 / ADR-002: нумерация файлов миграций подряд', () => {
+  it('T-004 К2 / ADR-002: 0001, 0002 — открывается, user_version 2 (контроль подмены)', async () => {
     fake.files = ['0002_b.sql', '0001_a.sql'];
     const s = await openDefault();
     expect(s.pragmas().userVersion).toBe(2);
     s.close();
   });
 
-  it('T-004 К3: пропуск (0001, 0003) — исключение', async () => {
+  it('T-004 К2 / ADR-002: пропуск (0001, 0003) — исключение о нумерации миграций', async () => {
     fake.files = ['0001_a.sql', '0003_c.sql'];
-    await expect(openDefault()).rejects.toThrow();
+    await expect(openDefault()).rejects.toThrow(/миграции/);
   });
 
-  it('T-004 К4: нумерация не с 0001 (0002) — исключение', async () => {
+  it('T-004 К2 / ADR-002: нумерация не с 0001 (0002) — исключение о нумерации миграций', async () => {
     fake.files = ['0002_b.sql'];
-    await expect(openDefault()).rejects.toThrow();
+    await expect(openDefault()).rejects.toThrow(/миграции/);
   });
 
-  it('T-004 К4: дубль номера (0001, 0001) — исключение', async () => {
+  it('T-004 К2 / ADR-002: дубль номера (0001, 0001) — исключение о нумерации миграций, а не CREATE TABLE', async () => {
     fake.files = ['0001_a.sql', '0001_b.sql'];
-    await expect(openDefault()).rejects.toThrow();
+    await expect(openDefault()).rejects.toThrow(/миграции/);
   });
 });
