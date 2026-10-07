@@ -42,6 +42,12 @@ export type Storage = {
   listStockEvents(productId: string): StockEvent[];
   listStateEvents(productId: string): StateEvent[];
   hasStockEvents(productId: string): boolean;
+  /** T-009, ADR-003a §5: MAX(seq) журнала остатка, 0 при пустом. */
+  maxStockSeq(): number;
+  /** T-009: различные позиции событий с afterSeq < seq <= uptoSeq (отмена — позиция цели). */
+  productsChangedBetween(afterSeq: number, uptoSeq: number): string[];
+  /** T-009: true только пока выполняется fn внешней или вложенной transaction. */
+  inTransaction(): boolean;
   /**
    * Несколько чтений и вставок атомарно; вложенный вызов входит в внешнюю транзакцию.
    * Всё или ничего: исключение из fn откатывает транзакцию и пробрасывается дальше.
@@ -247,6 +253,12 @@ export function openStorage(options: StorageOptions): Storage {
     listStateEvents: (productId) =>
       all('SELECT * FROM state_event WHERE product_id = ? ORDER BY occurred_at, seq', productId).map(toState),
     hasStockEvents: (productId) => get('SELECT 1 AS x FROM stock_event WHERE product_id = ? LIMIT 1', productId) !== undefined,
+    maxStockSeq: () => Number((get('SELECT COALESCE(MAX(seq), 0) AS m FROM stock_event') as Row)['m']),
+    productsChangedBetween: (afterSeq, uptoSeq) =>
+      all('SELECT DISTINCT product_id FROM stock_event WHERE seq > ? AND seq <= ?', afterSeq, uptoSeq).map(
+        (r) => r['product_id'] as string,
+      ),
+    inTransaction: () => depth > 0,
     transaction,
   };
 }
