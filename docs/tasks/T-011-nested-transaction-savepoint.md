@@ -2,7 +2,7 @@
 
 | Поле | Значение |
 | --- | --- |
-| Статус | impl |
+| Статус | review |
 | Исполнитель | tester: `tests/`; backend-dev: `src/server/storage/index.ts`, комментарий в `src/server/app/auto-writeoff.ts` |
 | Покрывает | BR-02, BR-26, NFR-07 |
 | Зависит от | T-004 (`openStorage`, `transaction`), T-005 (`recordSystemBatch`), T-009 (`inTransaction`), T-010 (автосписание, А10–А11) — все done |
