@@ -17,6 +17,5 @@ describe('T-008 синтетический журнал, уменьшенный 
 
   it('T-008 К17: остатки всех позиций в памяти и через хранилище совпадают', () => {
     checkDomainEqualsStorage(journal);
-    expect(journal.events.length).toBeGreaterThan(0);
   });
 });

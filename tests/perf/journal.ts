@@ -17,7 +17,7 @@ const int = (r: { next(): number }, from: number, to: number): number => from + 
 
 /** Число событий на позицию: ритмичные чаще; сумма точно равна total. */
 function counts(total: number): number[] {
-  const weights = Array.from({ length: PERF.products }, (_, i) => (i < PERF.rhythmic ? 1.5 : 0.8));
+  const weights = Array.from({ length: PERF.products }, (_, i) => (i < PERF.rhythmic ? 2 : 0.7));
   const sum = weights.reduce((a, b) => a + b, 0);
   const out = weights.map((w) => Math.floor((total * w) / sum));
   let rest = total - out.reduce((a, b) => a + b, 0);
@@ -25,12 +25,28 @@ function counts(total: number): number[] {
   return out;
 }
 
+type Draft = { p: number; i: number; ms: number; input: Omit<StockEventInput, 'seq'> };
+
+/** Доли видов событий по накопленной границе: [граница, вид]. ADR-003 §1: у ритмичных автосписания — большинство. */
+const MIX_RHYTHMIC: ReadonlyArray<readonly [number, string]> = [
+  [0.07, 'purchase'], [0.78, 'auto_writeoff'], [0.83, 'portion'], [0.89, 'recipe'],
+  [0.91, 'spoilage'], [0.95, 'inventory'], [0.97, 'depleted'], [1, 'cancel'],
+];
+const MIX_OTHER: ReadonlyArray<readonly [number, string]> = [
+  [0.10, 'purchase'], [0.61, 'portion'], [0.76, 'recipe'], [0.81, 'spoilage'],
+  [0.91, 'inventory'], [0.96, 'depleted'], [1, 'cancel'],
+];
+
+/**
+ * Входы строятся по позициям, затем все события сортируются по recordedAt (тай-брейк — номер позиции, затем номер
+ * внутри позиции), seq назначается в этом порядке и события создаются через createStockEvent. Так строки позиции
+ * чередуются на диске так же, как в реальном журнале; цель отмены внутри позиции всегда раньше (seq меньше).
+ */
 export function generateJournal(seed: number, totalEvents: number): Journal {
   const rng = createRng(seed);
   const perProduct = counts(totalEvents);
   const products: Product[] = [];
-  const events: StockEvent[] = [];
-  let seq = 0;
+  const drafts: Draft[] = [];
 
   for (let p = 0; p < PERF.products; p++) {
     const id = `p${String(p).padStart(3, '0')}`;
@@ -44,46 +60,59 @@ export function generateJournal(seed: number, totalEvents: number): Journal {
       unitsPerPack: 100 * int(rng, 1, 10),
     });
     if (!made.ok) throw new Error(`позиция ${id}: ${made.error.attribute} ${made.error.message}`);
-    const product = made.value;
-    products.push(product);
+    products.push(made.value);
 
-    const mine: StockEvent[] = [];
+    const mix = rhythmic ? MIX_RHYTHMIC : MIX_OTHER;
+    const mine: Draft[] = [];
     let t = START_MS + int(rng, 0, 600) * MINUTE;
     for (let i = 0; i < (perProduct[p] as number); i++) {
       t += int(rng, 1, 120) * MINUTE;
       const occurredMs = rng.next() < 0.03 ? t - int(rng, 1, 2880) * MINUTE : t;
-      const occurredAt = new Date(occurredMs).toISOString();
-      const eventId = `e-${id}-${i}`;
-      const base = { id: eventId, seq: ++seq, occurredAt, recordedAt: new Date(t).toISOString(), source: 'perf' };
+      const base = {
+        id: `e-${id}-${i}`, occurredAt: new Date(occurredMs).toISOString(), recordedAt: new Date(t).toISOString(), source: 'perf',
+      };
       const x = rng.next();
-      let input: StockEventInput;
-      if (x < 0.08 || mine.length === 0) {
-        input = rng.next() < 0.5
-          ? { ...base, kind: 'purchase', packs: int(rng, 1, 3) }
-          : { ...base, kind: 'purchase', quantity: int(rng, 50, 1000) };
-      } else if (x < 0.5) {
-        input = { ...base, kind: rhythmic ? 'auto_writeoff' : 'portion', quantity: int(rng, 1, 100) };
-      } else if (x < 0.58) {
-        input = { ...base, kind: 'recipe', quantity: int(rng, 10, 300) };
-      } else if (x < 0.62) {
-        input = { ...base, kind: 'spoilage', quantity: int(rng, 10, 300) };
-      } else if (x < 0.70) {
-        input = { ...base, kind: 'inventory', value: int(rng, 0, 1000) };
-      } else if (x < 0.74) {
-        input = { ...base, kind: 'depleted' };
-      } else {
-        // Отмена среди последних 50 событий; в 30% случаев — отмена отмены, если такая цель есть.
-        const window = mine.slice(-50);
-        const cancels = window.filter((e) => e.kind === 'cancel');
-        const pool = rng.next() < 0.3 && cancels.length > 0 ? cancels : window;
-        input = { ...base, kind: 'cancel', targetId: (pool[int(rng, 0, pool.length - 1)] as StockEvent).id };
+      const kind = mine.length === 0 ? 'purchase' : (mix.find(([bound]) => x < bound) as readonly [number, string])[1];
+      let input: Draft['input'];
+      switch (kind) {
+        case 'purchase':
+          input = rng.next() < 0.5
+            ? { ...base, kind: 'purchase', packs: int(rng, 1, 3) }
+            : { ...base, kind: 'purchase', quantity: int(rng, 50, 1000) };
+          break;
+        case 'inventory':
+          input = { ...base, kind: 'inventory', value: int(rng, 0, 1000) };
+          break;
+        case 'depleted':
+          input = { ...base, kind: 'depleted' };
+          break;
+        case 'cancel': {
+          // Отмена среди последних 50 событий позиции; в 30% случаев — отмена отмены, если такая цель есть.
+          const window = mine.slice(-50);
+          const cancels = window.filter((d) => d.input.kind === 'cancel');
+          const pool = rng.next() < 0.3 && cancels.length > 0 ? cancels : window;
+          input = { ...base, kind: 'cancel', targetId: (pool[int(rng, 0, pool.length - 1)] as Draft).input.id };
+          break;
+        }
+        default: {
+          const range = kind === 'auto_writeoff' || kind === 'portion' ? [1, 100] : [10, 300];
+          input = { ...base, kind: kind as 'portion', quantity: int(rng, range[0] as number, range[1] as number) };
+        }
       }
-      const r = createStockEvent(product, input);
-      if (!r.ok) throw new Error(`createStockEvent отказал: ${JSON.stringify(input)} — ${r.error.attribute}: ${r.error.message}`);
-      mine.push(r.value);
-      events.push(r.value);
+      const d: Draft = { p, i, ms: t, input };
+      mine.push(d);
+      drafts.push(d);
     }
   }
+
+  drafts.sort((a, b) => a.ms - b.ms || a.p - b.p || a.i - b.i);
+  const events: StockEvent[] = [];
+  drafts.forEach((d, k) => {
+    const input = { ...d.input, seq: k + 1 } as StockEventInput;
+    const r = createStockEvent(products[d.p] as Product, input);
+    if (!r.ok) throw new Error(`createStockEvent отказал: ${JSON.stringify(input)} — ${r.error.attribute}: ${r.error.message}`);
+    events.push(r.value);
+  });
   return { products, events };
 }
 
@@ -97,7 +126,7 @@ export function groupByProduct(events: readonly StockEvent[]): Map<string, Stock
   return m;
 }
 
-/** Вставка в порядке генерации одной транзакцией; seq хранилища совпадает с seq генератора. */
+/** Вставка в порядке seq (по recordedAt) одной транзакцией; seq хранилища совпадает с seq генератора. */
 export function loadIntoStorage(storage: Storage, journal: Journal): void {
   storage.transaction(() => {
     for (const p of journal.products) {

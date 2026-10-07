@@ -4,6 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { expect } from 'vitest';
 import { openStorage } from '../../src/server/storage/index.ts';
+import type { Storage } from '../../src/server/storage/index.ts';
 import { PERF } from './config.ts';
 import { balancesInMemory, balancesViaStorage, generateJournal, groupByProduct, loadIntoStorage } from './journal.ts';
 import type { Journal } from './journal.ts';
@@ -22,6 +23,15 @@ export function checkJournalShape(j: Journal, target: number): void {
   const byId = new Map(j.events.map((e) => [e.id, e]));
   const cancelOfCancel = j.events.some((e) => e.kind === 'cancel' && byId.get(e.targetId as string)?.kind === 'cancel');
   expect(cancelOfCancel, 'отмена отмены').toBe(true);
+  // События в порядке seq = порядок recordedAt (тай-брейк — позиция); цель отмены раньше по seq.
+  let prev = '';
+  j.events.forEach((e, k) => {
+    expect(e.seq, 'seq подряд').toBe(k + 1);
+    expect(e.recordedAt >= prev, `порядок recordedAt у ${e.id}`).toBe(true);
+    prev = e.recordedAt;
+    if (e.kind === 'cancel') expect((byId.get(e.targetId as string) as { seq: number }).seq, `цель отмены ${e.id}`).toBeLessThan(e.seq);
+  });
+  expect(new Set(j.events.slice(0, 1000).map((e) => e.productId)).size, 'позиции чередуются').toBeGreaterThan(20);
 }
 
 export function checkDeterminism(target: number): void {
@@ -42,16 +52,21 @@ export function withTempDb<T>(fn: (path: string) => T): T {
   }
 }
 
+/** Остатки в памяти (а) и через хранилище (б) совпадают для всех позиций; журнал уже загружен в storage. */
+export function compareBalances(j: Journal, storage: Storage): void {
+  const a = balancesInMemory(groupByProduct(j.events));
+  const b = balancesViaStorage(storage);
+  expect(a.size).toBe(PERF.products);
+  expect(b.size).toBe(PERF.products);
+  for (const [id, v] of a) expect(b.get(id), `остаток ${id}`).toBe(v);
+}
+
 export function checkDomainEqualsStorage(j: Journal): void {
   withTempDb((path) => {
     const storage = openStorage({ path, busyTimeoutMs: 5000 });
     try {
       loadIntoStorage(storage, j);
-      const a = balancesInMemory(groupByProduct(j.events));
-      const b = balancesViaStorage(storage);
-      expect(a.size).toBe(PERF.products);
-      expect(b.size).toBe(PERF.products);
-      for (const [id, v] of a) expect(b.get(id), `остаток ${id}`).toBe(v);
+      compareBalances(j, storage);
     } finally {
       storage.close();
     }
