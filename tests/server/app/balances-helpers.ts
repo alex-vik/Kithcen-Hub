@@ -25,6 +25,9 @@ export type Narrow = StorageApi & {
   /** T-010: курсор job_runs; Narrow повторяет весь Storage, чтобы перф-тесты проходили typecheck. */
   lastJobDay(job: string): string | undefined;
   markJobDay(job: string, day: string): void;
+  /** T-012: периоды отпуска; Narrow повторяет весь Storage (перф-тесты, typecheck). */
+  addAbsencePeriod(p: { id: string; start: string; end: string; recordedAt: string }): { status: 'added' | 'exists'; period: { id: string; start: string; end: string; recordedAt: string } };
+  listAbsencePeriods(): { id: string; start: string; end: string; recordedAt: string }[];
 };
 export type BalanceCache = {
   balance(productId: string): number;

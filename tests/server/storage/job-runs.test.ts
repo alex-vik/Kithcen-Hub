@@ -11,7 +11,7 @@ const MIG1 = readFileSync(new URL('../../../src/server/storage/migrations/0001_i
 const userVersion = (db: DatabaseSync): number => Number((db.prepare('PRAGMA user_version').get() as { user_version: number }).user_version);
 
 describe('T-010 Х1: миграция 0002_job_runs', () => {
-  it('T-010 Х1: БД на версии 1 с данными → версия 2, job_runs есть, каталог и журнал не изменились', () => {
+  it('T-010 Х1: БД на версии 1 с данными → версия 3 (T-012: добавилась 0003), job_runs есть, каталог и журнал не изменились', () => {
     const path = tmpFile();
     const v1 = open({ path, busyTimeoutMs: 5000, migrations: [MIG1] });
     const p = mkProduct('p1', 'Кофе');
@@ -26,7 +26,7 @@ describe('T-010 Х1: миграция 0002_job_runs', () => {
     raw0.close();
 
     const s = open({ path, busyTimeoutMs: 5000 });
-    expect(s.pragmas().userVersion).toBe(2);
+    expect(s.pragmas().userVersion).toBe(3);
     expect({ products: s.listProducts(), events: s.listStockEvents('p1') }).toEqual(before);
     s.close();
     const raw = new DatabaseSync(path);
@@ -36,9 +36,9 @@ describe('T-010 Х1: миграция 0002_job_runs', () => {
     raw.close();
   });
 
-  it('T-010 Х1: новая пустая БД — версия 2 и таблица job_runs', () => {
+  it('T-010 Х1: новая пустая БД — версия 3 (T-012) и таблица job_runs', () => {
     const { storage, raw } = openFile();
-    expect(storage.pragmas().userVersion).toBe(2);
+    expect(storage.pragmas().userVersion).toBe(3);
     expect(count(raw, 'job_runs')).toBe(0);
     storage.close();
   });

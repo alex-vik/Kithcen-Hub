@@ -60,13 +60,13 @@ describe('T-004 К1: busyTimeoutMs — целое не меньше 0', () => {
 });
 
 describe('T-004 К2: миграции на пустой БД, остатка в схеме нет', () => {
-  it('T-004 К2 / T-010 Х1: user_version = номер последней миграции; STRICT-таблицы (после 0002 — и job_runs)', () => {
+  it('T-004 К2 / T-010 Х1: user_version = номер последней миграции; STRICT-таблицы (после 0002 — и job_runs, после 0003 — и absence_period, T-012 Х1)', () => {
     const { storage, raw } = openFile();
     expect(userVersion(raw)).toBe(latestMigration());
     const list = (raw.prepare('PRAGMA table_list').all() as { schema: string; name: string; strict: number }[]).filter(
       (t) => t.schema === 'main' && !t.name.startsWith('sqlite_'),
     );
-    expect(list.map((t) => t.name).sort()).toEqual(['job_runs', 'product', 'state_event', 'stock_event']);
+    expect(list.map((t) => t.name).sort()).toEqual(['absence_period', 'job_runs', 'product', 'state_event', 'stock_event']);
     for (const t of list) expect(t.strict, t.name).toBe(1);
     storage.close();
   });

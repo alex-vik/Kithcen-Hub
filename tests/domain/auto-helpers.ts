@@ -2,8 +2,9 @@
 // Контракт (docs/tasks/T-010, «Интерфейс»), заданный тестами:
 //   src/domain/time.ts: localDateOf(instant, tz), addDays(day, n), dayBounds(day, tz) -> {start, end},
 //                       localTimeOn(day, 'HH:MM', tz), pendingDays(cursor, now, {timeZone, autoWriteoffTime}) -> LocalDate[]
-//   src/domain/auto-writeoff.ts: autoWriteoffKey(productId, day), autoWriteoffsForDay(day, entries, params)
+//   src/domain/auto-writeoff.ts: autoWriteoffKey(productId, day), autoWriteoffsForDay(day, entries, params, absences)
 //                       -> { productId, quantity, key, occurredAt }[]
+// T-012: 4-й параметр absences обязателен в домене; обёртка auto() подставляет [] по умолчанию (механическая правка тестов T-010).
 // Модуль time.ts уже есть (там пока только isInstant): отсутствующие функции дают TypeError в каждом тесте.
 // auto-writeoff.ts ещё нет: грузится динамически, чтобы падал тест, а не весь файл.
 import * as timeModule from '../../src/domain/time.ts';
@@ -27,13 +28,21 @@ export const T = timeModule as unknown as TimeApi;
 
 export type Entry = { product: Product; stateEvents: readonly StateEvent[] };
 export type AutoWriteoff = { productId: string; quantity: number; key: string; occurredAt: Instant };
+export type AbsenceLike = { id: string; start: LocalDate; end: LocalDate; recordedAt: Instant };
 export type AutoApi = {
   autoWriteoffKey(productId: string, day: LocalDate): string;
-  autoWriteoffsForDay(day: LocalDate, entries: readonly Entry[], params: Params): AutoWriteoff[];
+  autoWriteoffsForDay(day: LocalDate, entries: readonly Entry[], params: Params, absences?: readonly AbsenceLike[]): AutoWriteoff[];
 };
 const URL_AUTO = new URL('../../src/domain/auto-writeoff.ts', import.meta.url).href;
 export async function auto(): Promise<AutoApi> {
-  return (await import(/* @vite-ignore */ URL_AUTO)) as AutoApi;
+  const mod = (await import(/* @vite-ignore */ URL_AUTO)) as {
+    autoWriteoffKey: AutoApi['autoWriteoffKey'];
+    autoWriteoffsForDay(day: LocalDate, entries: readonly Entry[], params: Params, absences: readonly AbsenceLike[]): AutoWriteoff[];
+  };
+  return {
+    autoWriteoffKey: (p, d) => mod.autoWriteoffKey(p, d),
+    autoWriteoffsForDay: (day, entries, params, absences = []) => mod.autoWriteoffsForDay(day, entries, params, absences),
+  };
 }
 
 export function prod(id: string, type: WriteOffType, norm: number | null, unit: 'г' | 'мл' | 'шт' = 'мл'): Product {
