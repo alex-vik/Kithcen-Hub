@@ -11,3 +11,6 @@ data/
 *.sqlite
 *.sqlite-wal
 *.sqlite-shm
+
+# ADR-001, T-009
+tests/perf/.out/
