@@ -32,7 +32,7 @@ export function createAutoWriteoff(deps: { storage: Storage; clock: Clock; param
             key: a.key, occurredAt: a.occurredAt,
           }));
           const r = write.recordSystemBatch(items);
-          // отказ вложенного пакета не откатывает уже вставленное — откат даёт только исключение (SAVEPOINT нет)
+          // T-011: пакет сам откатил свои вставки; throw нужен, иначе сутки отметились бы в job_runs без автосписаний
           if (r.outcome === 'rejected') throw new Error(`автосписание за ${day}: отказ ${r.attribute} (позиция ${r.index})`);
           storage.markJobDay(JOB, day);
         });
