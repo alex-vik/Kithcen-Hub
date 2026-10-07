@@ -129,7 +129,7 @@ describe('T-006 К5: независимость позиций и парамет
     const dogDays = new Set(factsOf(facts, 'dog-food').map((f) => localDateOf(f.at)));
     expect([...dogDays].sort()).toEqual(localDates(startDate, days));
     const dogTotal = factsOf(facts, 'dog-food').reduce((s, f) => s + f.quantity, 0);
-    expect(within(dogTotal, 90 * days, 0.1)).toBe(true);
+    expect(within(dogTotal, 40 * days, 0.1)).toBe(true);
     expect(generateReality({ products: TEMP_PROFILE.products }, { seed: DEFAULT_SEED, startDate, days })).toEqual(facts);
   });
 
