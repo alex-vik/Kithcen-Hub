@@ -284,3 +284,29 @@ describe('T-010 А10–А11: атомарность суток (NFR-07, хвос
     expect(autos(s.storage, 'p2')).toHaveLength(3);
   });
 });
+
+describe('T-011 С10: А11 — вставка p1 за сбойные сутки была до отказа на p2', () => {
+  it('T-011 С10: addStockEvent по p1 за 2026-10-05T21:00Z вернул added раньше вызова по p2 за те же сутки', async () => {
+    const FAIL_AT = '2026-10-05T21:00:00.000Z';
+    const s = setup(END1);
+    s.storage.markJobDay(JOB, '2026-10-04');
+    const inner = faulty(s.storage, { mode: 'reject', failAt: FAIL_AT });
+    const calls: { productId: string; status: string }[] = [];
+    const spy = {
+      ...inner,
+      addStockEvent: (e: Parameters<typeof inner.addStockEvent>[0]) => {
+        const r = inner.addStockEvent(e);
+        if (e.occurredAt === FAIL_AT) calls.push({ productId: e.productId, status: r.status });
+        return r;
+      },
+    };
+    const app = await makeAuto(spy, s.clock);
+    expect(() => app.runPending()).toThrow();
+    expect(calls).toEqual([
+      { productId: 'p1', status: 'added' },
+      { productId: 'p2', status: 'rejected' },
+    ]);
+    expect(totalEvents(s.raw)).toBe(2);
+    expect(s.storage.lastJobDay(JOB)).toBe('2026-10-05');
+  });
+});
