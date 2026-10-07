@@ -22,6 +22,9 @@ export type Narrow = StorageApi & {
   maxStockSeq(): number;
   productsChangedBetween(afterSeq: number, uptoSeq: number): string[];
   inTransaction(): boolean;
+  /** T-010: курсор job_runs; Narrow повторяет весь Storage, чтобы перф-тесты проходили typecheck. */
+  lastJobDay(job: string): string | undefined;
+  markJobDay(job: string, day: string): void;
 };
 export type BalanceCache = {
   balance(productId: string): number;
