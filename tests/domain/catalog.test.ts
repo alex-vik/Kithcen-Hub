@@ -300,7 +300,10 @@ function ev(
   state: 'active' | 'inactive',
   reason: StateEvent['reason'],
 ): StateEvent {
-  return { id, seq, productId: 'p-buckwheat', occurredAt, state, reason };
+  // T-004 К32: recordedAt обязателен; он идёт против seq (больший seq — более раннее recordedAt),
+  // чтобы реализация, ошибочно решающая по recordedAt, ломала К18/К19.
+  const recordedAt = `2026-10-20T00:00:${String(59 - seq).padStart(2, '0')}.000Z`;
+  return { id, seq, productId: 'p-buckwheat', occurredAt, recordedAt, state, reason };
 }
 
 describe('T-001 К16: нет событий состояния', () => {
@@ -382,5 +385,29 @@ describe('T-001 К20: параметры — из конфигурации', () 
     expect(suggestPortion(p, { portionsPerDailyNorm: 3 })).toBe(10);
     expect(suggestPortion(p, { portionsPerDailyNorm: 0.5 })).toBe(60);
     expect(suggestPortion(p, { portionsPerDailyNorm: 4 })).toBe(7.5);
+  });
+});
+
+describe('T-004 К32: у события состояния есть recordedAt и необязательная refEventId', () => {
+  const t = '2026-10-12T18:00:00.000Z';
+
+  it('T-004 К32: форма типа — recordedAt обязателен, refEventId необязательна (проверяет npm run typecheck)', () => {
+    const shape = (): StateEvent[] => {
+      const withRef: StateEvent = { ...ev('a', 1, t, 'active', 'purchase'), refEventId: 'e-1' };
+      const withoutRef: StateEvent = ev('b', 2, t, 'inactive', 'user_button');
+      // @ts-expect-error recordedAt обязателен
+      const noRecordedAt: StateEvent = { id: 'c', seq: 3, productId: 'p', occurredAt: t, state: 'active', reason: 'purchase' };
+      return [withRef, withoutRef, noRecordedAt];
+    };
+    expect(typeof shape).toBe('function');
+    expect(ev('a', 1, t, 'active', 'purchase').recordedAt).toMatch(/^2026-10-20T/);
+  });
+
+  it('T-004 К32: refEventId и recordedAt на активность не влияют', () => {
+    const a = { ...ev('a', 1, t, 'inactive', 'user_button'), refEventId: 'e-1' };
+    const b = { ...ev('b', 2, t, 'active', 'purchase'), refEventId: 'e-2', recordedAt: '2026-01-01T00:00:00.000Z' };
+    expect(isActive([a, b])).toBe(true);
+    expect(isActive([b, a])).toBe(true);
+    expect(isActive([{ ...a, recordedAt: '2030-01-01T00:00:00.000Z' }])).toBe(false);
   });
 });
