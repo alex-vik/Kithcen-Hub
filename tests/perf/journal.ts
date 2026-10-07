@@ -12,6 +12,8 @@ export type Journal = { products: Product[]; events: StockEvent[] };
 
 const START_MS = Date.UTC(2024, 0, 1);
 const MINUTE = 60_000;
+/** T-009 К16-доп.1: период журнала один для всех позиций (год), события позиции разложены по нему равномерно. */
+const PERIOD_MIN = 365 * 24 * 60;
 
 const int = (r: { next(): number }, from: number, to: number): number => from + Math.floor(r.next() * (to - from + 1));
 
@@ -64,9 +66,10 @@ export function generateJournal(seed: number, totalEvents: number): Journal {
 
     const mix = rhythmic ? MIX_RHYTHMIC : MIX_OTHER;
     const mine: Draft[] = [];
-    let t = START_MS + int(rng, 0, 600) * MINUTE;
-    for (let i = 0; i < (perProduct[p] as number); i++) {
-      t += int(rng, 1, 120) * MINUTE;
+    const total = perProduct[p] as number;
+    for (let i = 0; i < total; i++) {
+      // Расслоенная выборка: i-е событие — в i-й доле периода; первое и последнее события позиции — на краях периода.
+      const t = START_MS + Math.floor(((i + rng.next()) * PERIOD_MIN) / total) * MINUTE;
       const occurredMs = rng.next() < 0.03 ? t - int(rng, 1, 2880) * MINUTE : t;
       const base = {
         id: `e-${id}-${i}`, occurredAt: new Date(occurredMs).toISOString(), recordedAt: new Date(t).toISOString(), source: 'perf',
@@ -124,6 +127,16 @@ export function groupByProduct(events: readonly StockEvent[]): Map<string, Stock
     else m.set(e.productId, [e]);
   }
   return m;
+}
+
+/**
+ * T-009 К16-доп.3: вход пути (а) — новые объекты событий, созданные подряд по позиции (как при чтении журнала
+ * по позиции), а не те же ссылки, что в журнале и в общей куче генерации. Значения равны (toEqual).
+ */
+export function freshEventsByProduct(journal: Journal): Map<string, StockEvent[]> {
+  const out = new Map<string, StockEvent[]>();
+  for (const [id, list] of groupByProduct(journal.events)) out.set(id, list.map((e) => ({ ...e })));
+  return out;
 }
 
 /** Вставка в порядке seq (по recordedAt) одной транзакцией; seq хранилища совпадает с seq генератора. */

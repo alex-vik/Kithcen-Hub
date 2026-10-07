@@ -6,7 +6,9 @@ import { expect } from 'vitest';
 import { openStorage } from '../../src/server/storage/index.ts';
 import type { Storage } from '../../src/server/storage/index.ts';
 import { PERF } from './config.ts';
-import { balancesInMemory, balancesViaStorage, generateJournal, groupByProduct, loadIntoStorage } from './journal.ts';
+import {
+  balancesInMemory, balancesViaStorage, freshEventsByProduct, generateJournal, groupByProduct, loadIntoStorage,
+} from './journal.ts';
 import type { Journal } from './journal.ts';
 
 export function checkJournalShape(j: Journal, target: number): void {
@@ -67,6 +69,72 @@ export function checkDomainEqualsStorage(j: Journal): void {
     try {
       loadIntoStorage(storage, j);
       compareBalances(j, storage);
+    } finally {
+      storage.close();
+    }
+  });
+}
+
+/** T-009 К16-доп.1: первое и последнее по recordedAt события каждой позиции — в крайних α периода журнала. */
+export function checkPeriodAligned(j: Journal): void {
+  const times = j.events.map((e) => Date.parse(e.recordedAt));
+  // без Math.min(...): на 500 тыс. событий распаковка аргументов переполняет стек
+  const from = times.reduce((a, b) => Math.min(a, b), Infinity);
+  const to = times.reduce((a, b) => Math.max(a, b), -Infinity);
+  const alpha = PERF.alignAlpha * (to - from);
+  expect(to - from, 'период журнала не вырожден').toBeGreaterThan(0);
+  const byProduct = groupByProduct(j.events);
+  expect(byProduct.size).toBe(PERF.products);
+  for (const [id, list] of byProduct) {
+    const ts = list.map((e) => Date.parse(e.recordedAt));
+    expect(Math.min(...ts) - from, `первое событие ${id} в первых α`).toBeLessThanOrEqual(alpha);
+    expect(to - Math.max(...ts), `последнее событие ${id} в последних α`).toBeLessThanOrEqual(alpha);
+  }
+}
+
+/** T-009 К16-доп.2: в окнах по windowSize событий подряд (по seq) — начало, середина, конец — позиций больше minDistinct. */
+export function checkWindowsInterleaved(j: Journal): void {
+  const n = j.events.length;
+  const mid = Math.floor((n - PERF.windowSize) / 2);
+  const starts: Array<[string, number]> = [['начало', 0], ['середина', mid], ['конец', n - PERF.windowSize]];
+  for (const [name, from] of starts) {
+    const window = j.events.slice(from, from + PERF.windowSize);
+    expect(window, `окно «${name}»`).toHaveLength(PERF.windowSize);
+    expect(new Set(window.map((e) => e.productId)).size, `позиций в окне «${name}»`).toBeGreaterThan(PERF.windowDistinct);
+  }
+}
+
+/**
+ * T-009 К16-доп.3: вход пути (а) — новые объекты, равные по значению событиям журнала; остатки совпадают со свёрткой К17.
+ * storage — уже загруженное хранилище (полный объём, чтобы не грузить журнал дважды); без него журнал грузится во временную БД.
+ */
+export function checkFreshObjects(j: Journal, loaded?: Storage): void {
+  const fresh = freshEventsByProduct(j);
+  const original = groupByProduct(j.events);
+  expect(fresh.size).toBe(original.size);
+  for (const [id, list] of original) {
+    const copy = fresh.get(id) ?? [];
+    expect(copy, `события ${id}`).toHaveLength(list.length);
+    list.forEach((e, k) => {
+      expect(copy[k], `событие ${e.id}: те же значения`).toEqual(e);
+      expect(copy[k], `событие ${e.id}: не та же ссылка`).not.toBe(e);
+    });
+  }
+  const compare = (storage: Storage): void => {
+    const a = balancesInMemory(fresh);
+    const b = balancesViaStorage(storage);
+    expect(a.size).toBe(PERF.products);
+    for (const [id, v] of b) expect(a.get(id), `остаток ${id}`).toBe(v);
+  };
+  if (loaded) {
+    compare(loaded);
+    return;
+  }
+  withTempDb((path) => {
+    const storage = openStorage({ path, busyTimeoutMs: 5000 });
+    try {
+      loadIntoStorage(storage, j);
+      compare(storage);
     } finally {
       storage.close();
     }
