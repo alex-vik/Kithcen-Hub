@@ -2,7 +2,7 @@
 
 | Поле | Значение |
 | --- | --- |
-| Статус | impl |
+| Статус | review |
 | Исполнитель | tester: `tests/`; backend-dev: `src/domain/`, `src/server/storage/`, `src/server/app/`, `src/server/jobs/` |
 | Покрывает | FR-CON-01, FR-CON-07, FR-CON-08, BR-27, NFR-14; затрагивает BR-09 (неактивная не списывается), BR-10 (без нормы не списывается), BR-15 (минус после автосписаний не ошибка), BR-26 (повтор без дублей), NFR-07 (мягкая деградация тика) |
 | Зависит от | T-001 (`Product`, `isActive`), T-002/T-003 (`createStockEvent`, `stockBalance`, отмена), T-004 (`openStorage`, миграции, `transaction`), T-005 (`recordSystemBatch`, `derivedId`, `resolveSystemWrite`), T-009 (`BalanceCache.warm`) — все done |
