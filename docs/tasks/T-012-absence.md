@@ -2,7 +2,7 @@
 
 | Поле | Значение |
 | --- | --- |
-| Статус | review |
+| Статус | done (APPROVE 2026-10-07) |
 | Исполнитель | tester: `tests/`; backend-dev: `src/domain/`, `src/server/storage/`, `src/server/app/` |
 | Покрывает | FR-ABS-01, FR-ABS-02, FR-ABS-03 (часть «автосписания не выполняются»), FR-ABS-04; затрагивает BR-02, BR-26, BR-27, BR-15, NFR-07, NFR-14, NFR-16 |
 | Зависит от | T-002/T-003 (`stockBalance`, `stockLedger`, `cancelledIds`, отмена), T-004 (`openStorage`, миграции), T-005 (`recordSystemBatch`, `derivedId`), T-009 (`createBalanceCache`), T-010 (`autoWriteoffsForDay`, `runPending`, `time.ts`), T-011 (SAVEPOINT) — все done |
@@ -275,3 +275,8 @@ Tester пишет тесты раньше реализации, поэтому �
 - НВ-2 → (а) для B-07: только добавление. Вопрос владельцу записан как Q-33 (нужен к B-33).
 - Допущения приняты. Задача не дробится.
 - Отказ пакета отмен (rejected) в recordAbsence — исключение наружу, как runPending (О11, toThrow) — принято delivery-lead; отказ системного пакета — внутренняя ошибка, не пользовательский исход.
+
+## Хвосты ревью (решения delivery-lead 2026-10-07)
+
+- Tester (сразу, тесты на текущей реализации зелёные): (1) после О1 отменить отмену у P/10-12, записать период 10-12…10-14 → cancelled = 2, P/10-12 действующее (мутант cancelled = items.length; закрепляет допущение ADR-005); (2) вариант О7 с другим start и тем же end; (3) О6 сверяет period.recordedAt записанного; (4) О12(б) — toThrow(/boom-b/); (6) job-runs.test.ts — userVersion через latestMigration(), а не 3.
+- Отложено: общий хелпер fail/isPositive (порог «третий модуль» достигнут) — отдельная задача B-03d; UUID_V4 из absence.ts в ids.ts — при B-16/B-17; CHECK формата дат и end_day >= start_day в 0003 — низкий приоритет; узкое чтение в recordAbsence (только auto_writeoff в окне + все cancel) — отложенная мера по образцу D1, включать, если запись отпуска на целевом сервере > 1 с (весь процесс стоит на время чтения, NFR-06).
