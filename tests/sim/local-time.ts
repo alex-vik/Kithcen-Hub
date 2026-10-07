@@ -26,12 +26,18 @@ const parseDate = (d: LocalDate): number => {
 
 const fmtDate = (ms: number): LocalDate => new Date(ms).toISOString().slice(0, 10);
 
-/** Местная дата + 'HH:mm' (или 'HH:mm:ss') -> Instant. Двусмысленное осеннее время — первое вхождение. */
+/**
+ * Местная дата + 'HH:mm' (или 'HH:mm:ss') -> Instant. По ADR-005: двусмысленное осеннее время — первое вхождение;
+ * время из весеннего разрыва (03:00–03:59) — первый момент после разрыва (04:00 местного).
+ */
 export function localToInstant(date: LocalDate, time: string): Instant {
   const [h = 0, mi = 0, s = 0] = time.split(':').map(Number);
   const wall = parseDate(date) + h * HOUR + mi * 60_000 + s * 1000;
   const asDst = wall - 3 * HOUR;
-  const utc = isDstAtUtc(asDst) ? asDst : wall - 2 * HOUR;
+  if (isDstAtUtc(asDst)) return new Date(asDst).toISOString();
+  const asStd = wall - 2 * HOUR;
+  // зимнее прочтение попало в летнее время — такого местного времени нет (разрыв)
+  const utc = isDstAtUtc(asStd) ? lastSundayUtc(new Date(asStd).getUTCFullYear(), 2) : asStd;
   return new Date(utc).toISOString();
 }
 

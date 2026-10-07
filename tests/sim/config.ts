@@ -1,7 +1,6 @@
 // T-006: параметры стенда симулятора. Это настройки теста, не поведения продукта (раздел 15 спеки не затрагивается).
 import type { LocalDate } from '../../src/domain/time.ts';
 
-export const TIME_ZONE = 'Europe/Vilnius';
 /** T-006: сид по умолчанию. */
 export const DEFAULT_SEED = 20261006;
 /** T-006: начало периода (суббота) и длина; внутри оба перехода DST 2026. */
@@ -18,5 +17,7 @@ export const SLOW_GAP_JITTER = 0.3;
 /** T-006: минимум позиций каждого типа во временном профиле. */
 export const MIN_PER_TYPE = 3;
 export const PROFILE_SIZE = { min: 20, max: 30 } as const;
-/** T-006 К6: допуски. */
-export const TOLERANCE = { rhythmic: 0.1, burst: 0.25, slow: 0.25 } as const;
+/** T-006 К6: допуск ритмичных — доля от ожидаемой суммы. */
+export const TOLERANCE = { rhythmic: 0.1 } as const;
+/** T-006 К6: допуск рывковых и медленных — число σ ожидаемого числа использований (решение команды 2026-10-07: ~3,5σ; взято 4 — на 300 сидах при 3,5 был 1 ложный красный, на 3000 при 4 — 0). */
+export const SIGMA_K = 4;

@@ -1,11 +1,12 @@
 // T-006 К5, К6: генератор реального расхода дома («правда», которую система не видит).
 // Только обычные недели: календарь гостей и отъездов профиля игнорируется до B-05 (НВ-3).
-// Первым делом это отдельный модуль без зависимостей от прогона: его импортирует T-008.
+// Модуль не зависит от прогона (T-007): публичный вход для T-008 — он и rng.ts.
+// У каждой позиции свой генератор (сид = f(seed, productId)): правка профиля не перетасовывает остальные.
 import type { Instant, LocalDate } from '../../src/domain/time.ts';
 import { DEFAULT_SEED, PERIOD_DAYS, PERIOD_START, RHYTHMIC_CV, SLOW_GAP_JITTER, SLOW_USES_PER_PACK, USE_SIZE_CV } from './config.ts';
 import { addDays, localToInstant } from './local-time.ts';
 import type { HomeProfile } from './profile.ts';
-import { createRng, type Rng } from './rng.ts';
+import { createRng, seedFor, type Rng } from './rng.ts';
 
 export type ConsumptionFact = { productId: string; at: Instant; quantity: number };
 
@@ -15,13 +16,13 @@ const hhmm = (hour: number, minute: number): string => `${String(hour).padStart(
 const atHour = (rng: Rng, date: LocalDate, hour: number): Instant => localToInstant(date, hhmm(hour, Math.floor(rng.next() * 60)));
 const whole = (x: number): number => Math.max(1, Math.round(x));
 
-export function generateReality(profile: HomeProfile, options: RealityOptions = {}): ConsumptionFact[] {
+export function generateReality(profile: Pick<HomeProfile, 'products'>, options: RealityOptions = {}): ConsumptionFact[] {
   const { seed = DEFAULT_SEED, startDate = PERIOD_START, days = PERIOD_DAYS } = options;
-  const rng = createRng(seed);
   const facts: ConsumptionFact[] = [];
 
   for (const { input, usage } of profile.products) {
     const productId = input.id;
+    const rng = createRng(seedFor(seed, productId));
     if (usage.kind === 'rhythmic') {
       const n = usage.slotHours.length;
       for (let d = 0; d < days; d++) {

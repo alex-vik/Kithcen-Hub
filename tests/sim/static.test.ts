@@ -10,8 +10,12 @@ const SELF = 'static.test.ts';
 const FORBIDDEN: [string, RegExp][] = [
   ['Math.random', /Math\s*\.\s*random/],
   ['Date.now', /Date\s*\.\s*now/],
-  ['new Date() без аргумента', /new\s+Date\s*\(\s*\)/],
-  ['импорт src/server', /(?:from|import|require)\s*\(?\s*['"][^'"]*\bserver\//],
+  ['new Date() без аргумента', /new\s+Date\s*(?:\(\s*\)|(?![\w$(\s]))/],
+  ['Date() как функция', /(?<![\w$.])(?<!new\s)Date\s*\(\s*\)/],
+  ['performance.now', /performance\s*\.\s*now/],
+  ['crypto.getRandomValues', /getRandomValues/],
+  ['crypto.randomUUID', /randomUUID/],
+  ['импорт src/server', /(?:from|import|require)\s*\(?\s*['"][^'"]*\bserver(?:\/|['"])/],
 ];
 
 export const violations = (code: string): string[] => FORBIDDEN.filter(([, re]) => re.test(code)).map(([n]) => n);
@@ -29,12 +33,23 @@ describe('T-006 К3: статическая проверка tests/sim/', () => 
     expect(violations('const d = new Date( );')).toEqual(['new Date() без аргумента']);
     expect(violations("import { app } from '../../src/server/app.ts';")).toEqual(['импорт src/server']);
     expect(violations("const m = await import('../server/x.ts');")).toEqual(['импорт src/server']);
+    expect(violations('const d = new Date;')).toEqual(['new Date() без аргумента']);
+    expect(violations('const d = new Date')).toEqual(['new Date() без аргумента']);
+    expect(violations('const s = Date();')).toEqual(['Date() как функция']);
+    expect(violations('const t = performance.now();')).toEqual(['performance.now']);
+    expect(violations('crypto.getRandomValues(a)')).toEqual(['crypto.getRandomValues']);
+    expect(violations('crypto.randomUUID()')).toEqual(['crypto.randomUUID']);
+    expect(violations("import s from '../../src/server';")).toEqual(['импорт src/server']);
+    expect(violations("export { x } from '../../src/server'")).toEqual(['импорт src/server']);
     expect(violations('new Date(Date.UTC(2026, 0, 1))')).toEqual([]);
+    expect(violations('new Date(ms).toISOString()')).toEqual([]);
+    expect(violations('const d = new Date(x);')).toEqual([]);
+    expect(violations("import { x } from '../../src/domain/serverless.ts';")).toEqual([]);
     expect(violations("import { createProduct } from '../../src/domain/catalog.ts';")).toEqual([]);
   });
 
   it('T-006 К3: в tests/sim/ нет запрещённого', () => {
-    const files = walk(DIR).filter((f) => /\.(ts|tsx|js|mjs)$/.test(f) && !f.endsWith(`/${SELF}`));
+    const files = walk(DIR).filter((f) => /\.(ts|tsx|mts|cts|js|mjs|cjs)$/.test(f) && !f.endsWith(`/${SELF}`));
     expect(files.length).toBeGreaterThan(5);
     const offenders = files.flatMap((f) => violations(readFileSync(f, 'utf8')).map((v) => `${f}: ${v}`));
     expect(offenders).toEqual([]);

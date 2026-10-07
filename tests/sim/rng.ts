@@ -23,3 +23,17 @@ export function createRng(seed: number): Rng {
   };
   return { next, gauss };
 }
+
+/**
+ * T-006: сид генератора позиции = f(сид прогона, id позиции) (FNV-1a по id, смешивание с сидом).
+ * Правка одной позиции профиля не меняет числа остальных.
+ */
+export function seedFor(seed: number, productId: string): number {
+  let h = 0x811c9dc5 ^ (seed >>> 0);
+  for (let i = 0; i < productId.length; i++) {
+    h = Math.imul(h ^ productId.charCodeAt(i), 0x01000193) >>> 0;
+  }
+  h = Math.imul(h ^ (h >>> 16), 0x85ebca6b) >>> 0;
+  h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35) >>> 0;
+  return (h ^ (h >>> 16)) >>> 0;
+}

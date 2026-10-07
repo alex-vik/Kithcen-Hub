@@ -49,3 +49,61 @@ describe('T-006 К4: местное время Europe/Vilnius', () => {
     expect(localDateOf('2026-07-01T21:00:00.000Z')).toBe('2026-07-02');
   });
 });
+
+// Эталон — Intl с поясом Europe/Vilnius.
+const vilnius = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Europe/Vilnius', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23',
+});
+const wallOf = (ms: number): { date: string; time: string } => {
+  const p = Object.fromEntries(vilnius.formatToParts(new Date(ms)).map((x) => [x.type, x.value]));
+  return { date: `${p.year}-${p.month}-${p.day}`, time: `${p.hour}:${p.minute}` };
+};
+
+describe('T-006 К4: кросс-проверка против Intl (Europe/Vilnius)', () => {
+  it('T-006 К4: localDateOf совпадает с Intl каждые 15 минут за период (с запасом по краям)', () => {
+    const from = Date.parse('2025-12-31T00:00:00Z');
+    const to = Date.parse('2027-01-04T00:00:00Z');
+    const bad: string[] = [];
+    for (let ms = from; ms < to; ms += 15 * 60_000) {
+      const iso = new Date(ms).toISOString();
+      if (localDateOf(iso) !== wallOf(ms).date) bad.push(iso);
+    }
+    expect(bad).toEqual([]);
+  });
+
+  it('T-006 К4: localToInstant — обратная к Intl для каждого существующего местного времени (каждые 15 минут)', () => {
+    const bad: string[] = [];
+    for (const d of localDates('2026-01-03', 365)) {
+      for (let m = 0; m < 24 * 60; m += 15) {
+        const t = `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+        const w = wallOf(Date.parse(localToInstant(d, t)));
+        const gap = d === '2026-03-29' && t >= '03:00' && t < '04:00';
+        if (!gap && (w.date !== d || w.time !== t)) bad.push(`${d} ${t} -> ${w.date} ${w.time}`);
+      }
+    }
+    expect(bad).toEqual([]);
+  });
+
+  it('T-006 К4: осень, 2026-10-25 03:30 — первое вхождение (летнее), 00:30Z; второе вхождение не выбирается', () => {
+    expect(localToInstant('2026-10-25', '03:30')).toBe('2026-10-25T00:30:00.000Z');
+    expect(localToInstant('2026-10-25', '03:00')).toBe('2026-10-25T00:00:00.000Z');
+    expect(localToInstant('2026-10-25', '03:59')).toBe('2026-10-25T00:59:00.000Z');
+    expect(localDateOf('2026-10-25T00:30:00.000Z')).toBe('2026-10-25');
+    expect(localDateOf('2026-10-25T01:30:00.000Z')).toBe('2026-10-25');
+  });
+
+  it('T-006 К4: весна, 2026-03-29 — время из разрыва 03:00–03:59 даёт первый момент после разрыва (04:00 = 01:00Z), ADR-005', () => {
+    for (const t of ['03:00', '03:30', '03:59']) expect(localToInstant('2026-03-29', t), t).toBe('2026-03-29T01:00:00.000Z');
+    expect(localToInstant('2026-03-29', '04:00')).toBe('2026-03-29T01:00:00.000Z');
+    expect(localToInstant('2026-03-29', '02:59')).toBe('2026-03-29T00:59:00.000Z');
+  });
+
+  it('T-006 К4: границы суток 2026-03-29 и 2026-10-25 (переход в 01:00Z, не в 00:00Z)', () => {
+    expect(localDateOf('2026-03-28T21:59:59.000Z')).toBe('2026-03-28');
+    expect(localDateOf('2026-03-28T22:00:00.000Z')).toBe('2026-03-29');
+    expect(localDateOf('2026-10-24T20:59:59.000Z')).toBe('2026-10-24');
+    expect(localDateOf('2026-10-24T21:00:00.000Z')).toBe('2026-10-25');
+    expect(localDateOf('2026-10-25T21:59:59.000Z')).toBe('2026-10-25'); // сутки 25 часов
+    expect(localDateOf('2026-10-25T22:00:00.000Z')).toBe('2026-10-26');
+  });
+});
