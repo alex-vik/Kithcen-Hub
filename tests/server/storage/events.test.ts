@@ -117,12 +117,13 @@ describe('T-004 К12: события позиции читаются в поря
     w(stock(g, 'g-recipe', 'recipe', at('13', '20:00'), { quantity: 250 }));
     w(stock(g, 'g-buy', 'purchase', at('12', '18:00'), { quantity: 1800 }));
     w(stock(r, 'r-1', 'portion', at('12', '12:00'), { quantity: 50 }));
-    w(stock(g, 'g-tie-portion', 'portion', at('13', '20:00'), { quantity: 50 }));
+    // равное occurredAt: id идёт против порядка вставки, recordedAt — против seq (порядок задаёт только seq)
+    w(stock(g, 'g-tie-z-portion', 'portion', at('13', '20:00'), { quantity: 50, recordedAt: '2026-10-13T20:00:09.000Z' }));
     w(stock(r, 'r-2', 'purchase', at('13', '12:00'), { quantity: 800 }));
-    w(stock(g, 'g-tie-purchase', 'purchase', at('13', '20:00'), { quantity: 50 }));
+    w(stock(g, 'g-tie-a-purchase', 'purchase', at('13', '20:00'), { quantity: 50, recordedAt: '2026-10-13T20:00:01.000Z' }));
 
     const events = storage.listStockEvents(g.id);
-    expect(events.map((e) => e.id)).toEqual(['g-inv1', 'g-buy', 'g-inv2', 'g-recipe', 'g-tie-portion', 'g-tie-purchase']);
+    expect(events.map((e) => e.id)).toEqual(['g-inv1', 'g-buy', 'g-inv2', 'g-recipe', 'g-tie-z-portion', 'g-tie-a-purchase']);
     expect(stockBalance(events)).toBe(1650);
     const inv2 = stockLedger(events).find((row) => row.eventId === 'g-inv2');
     expect(inv2?.implicit).toBe(-300);
@@ -187,9 +188,10 @@ describe('T-004 К16: журнал состояний — запись, чтен
     const { storage, raw } = openFile();
     const p = mkProduct('p-kefir', 'Кефир', 'мл', 1000);
     storage.addProduct(p);
-    const s1 = state(p.id, 's-1', at('12', '10:00'), 'inactive', 'user_button');
-    const s2 = state(p.id, 's-2', at('12', '10:00'), 'active', 'user_restore');
-    const s3 = state(p.id, 's-3', at('11', '09:00'), 'inactive', 'auto_archive');
+    // s1, s2 — равное occurredAt: id идёт против порядка вставки, recordedAt — против seq
+    const s1 = state(p.id, 's-z', at('12', '10:00'), 'inactive', 'user_button', { recordedAt: '2026-10-12T10:00:09.000Z' });
+    const s2 = state(p.id, 's-a', at('12', '10:00'), 'active', 'user_restore', { recordedAt: '2026-10-12T10:00:01.000Z' });
+    const s3 = state(p.id, 's-m', at('11', '09:00'), 'inactive', 'auto_archive');
     const w1 = added(storage.addStateEvent(s1));
     const w2 = added(storage.addStateEvent(s2));
     const w3 = added(storage.addStateEvent(s3));

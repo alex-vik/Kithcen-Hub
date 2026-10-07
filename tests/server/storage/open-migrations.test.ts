@@ -39,6 +39,26 @@ describe('T-004 К1: открытие БД с настройками ADR-002', (
   });
 });
 
+describe('T-004 К1: busyTimeoutMs — целое не меньше 0', () => {
+  it('T-004 К1: отрицательное, дробное, NaN, Infinity — исключение; 0 допустим', () => {
+    for (const bad of [-1, 1.5, Number.NaN, Number.POSITIVE_INFINITY]) {
+      expect(() => open({ path: ':memory:', busyTimeoutMs: bad }), String(bad)).toThrow();
+    }
+    const s = open({ path: ':memory:', busyTimeoutMs: 0 });
+    expect(s.pragmas().busyTimeoutMs).toBe(0);
+    s.close();
+  });
+
+  it('T-004 К1: при отказе файл БД не получает схему', () => {
+    const path = tmpFile();
+    expect(() => open({ path, busyTimeoutMs: -5 })).toThrow();
+    const raw = new DatabaseSync(path);
+    expect(userVersion(raw)).toBe(0);
+    expect(tables(raw)).toEqual([]);
+    raw.close();
+  });
+});
+
 describe('T-004 К2: миграции на пустой БД, остатка в схеме нет', () => {
   it('T-004 К2: user_version = номер последней миграции; три STRICT-таблицы', () => {
     const { storage, raw } = openFile();

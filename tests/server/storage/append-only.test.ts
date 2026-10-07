@@ -46,7 +46,9 @@ describe('T-004 К5: журнал остатка нельзя изменить �
       ['UPDATE kind', () => attempt(raw, 'UPDATE stock_event SET kind = ? WHERE id = ?', 'recipe', e.id)],
       ['DELETE по id', () => attempt(raw, 'DELETE FROM stock_event WHERE id = ?', e.id)],
       ['DELETE всего', () => attempt(raw, 'DELETE FROM stock_event')],
-      ['INSERT OR REPLACE', () => replaceWith(raw, 'stock_event', nth(before, 0), { quantity: 999 })],
+      ['INSERT OR REPLACE тот же id и seq', () => replaceWith(raw, 'stock_event', nth(before, 0), { quantity: 999 })],
+      ['INSERT OR REPLACE тот же id, новый seq', () => replaceWith(raw, 'stock_event', nth(before, 0), { seq: e.seq + 100, quantity: 999 })],
+      ['INSERT OR REPLACE новый id, существующий seq', () => replaceWith(raw, 'stock_event', nth(before, 0), { id: 'e-new', quantity: 999 })],
     ];
     for (const [name, run] of attempts) {
       run();
@@ -73,7 +75,9 @@ describe('T-004 К6: журнал состояний защищён так же'
       ['UPDATE occurred_at', () => attempt(raw, 'UPDATE state_event SET occurred_at = ? WHERE id = ?', '2026-10-13T09:00:00.000Z', s.id)],
       ['DELETE по id', () => attempt(raw, 'DELETE FROM state_event WHERE id = ?', s.id)],
       ['DELETE всего', () => attempt(raw, 'DELETE FROM state_event')],
-      ['INSERT OR REPLACE', () => replaceWith(raw, 'state_event', nth(before, 0), { state: 'active', reason: 'user_restore' })],
+      ['INSERT OR REPLACE тот же id и seq', () => replaceWith(raw, 'state_event', nth(before, 0), { state: 'active', reason: 'user_restore' })],
+      ['INSERT OR REPLACE тот же id, новый seq', () => replaceWith(raw, 'state_event', nth(before, 0), { seq: s.seq + 100, state: 'active', reason: 'user_restore' })],
+      ['INSERT OR REPLACE новый id, существующий seq', () => replaceWith(raw, 'state_event', nth(before, 0), { id: 's-new', state: 'active', reason: 'user_restore' })],
     ];
     for (const [name, run] of attempts) {
       run();
