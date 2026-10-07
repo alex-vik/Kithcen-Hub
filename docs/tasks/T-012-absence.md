@@ -2,7 +2,7 @@
 
 | Поле | Значение |
 | --- | --- |
-| Статус | impl |
+| Статус | review |
 | Исполнитель | tester: `tests/`; backend-dev: `src/domain/`, `src/server/storage/`, `src/server/app/` |
 | Покрывает | FR-ABS-01, FR-ABS-02, FR-ABS-03 (часть «автосписания не выполняются»), FR-ABS-04; затрагивает BR-02, BR-26, BR-27, BR-15, NFR-07, NFR-14, NFR-16 |
 | Зависит от | T-002/T-003 (`stockBalance`, `stockLedger`, `cancelledIds`, отмена), T-004 (`openStorage`, миграции), T-005 (`recordSystemBatch`, `derivedId`), T-009 (`createBalanceCache`), T-010 (`autoWriteoffsForDay`, `runPending`, `time.ts`), T-011 (SAVEPOINT) — все done |
@@ -274,3 +274,4 @@ Tester пишет тесты раньше реализации, поэтому �
 - НВ-1 → (а), решение команды; уточнения внесены в ADR-005 и ADR-003 §6.
 - НВ-2 → (а) для B-07: только добавление. Вопрос владельцу записан как Q-33 (нужен к B-33).
 - Допущения приняты. Задача не дробится.
+- Отказ пакета отмен (rejected) в recordAbsence — исключение наружу, как runPending (О11, toThrow) — принято delivery-lead; отказ системного пакета — внутренняя ошибка, не пользовательский исход.
