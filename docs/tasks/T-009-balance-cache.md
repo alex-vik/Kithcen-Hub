@@ -2,7 +2,7 @@
 
 | Поле | Значение |
 | --- | --- |
-| Статус | review (после CHANGES #1) |
+| Статус | done (APPROVE 2026-10-07) |
 | Исполнитель | tester: `tests/`, в том числе `tests/perf/`; backend-dev: `src/server/storage/index.ts`, `src/server/app/balances.ts` |
 | Покрывает | BR-01 (кэш всегда равен свёртке журнала), BR-02 (отмена и отмена отмены пересобирают позицию), BR-15 (минус кэшируется как есть), ADR-003 §3 (порог 500 тыс. / 100 мс) в редакции ADR-003a §4–6; затрагивает NFR-07 (сбой прогрева не ломает работу), NFR-16 (домен не меняется) |
 | Зависит от | T-004 (done): `openStorage`, `listProducts`, `listStockEvents`, `addStockEvent`, `transaction`; T-005 (done): `recordEvent`, `recordSystemBatch`; T-002, T-003 (done): `createStockEvent`, `stockBalance`; T-008 (done): генератор журнала, `npm run perf`. По файлам не пересекается с B-06, если B-06 не правит `src/server/storage/index.ts` (ADR-003a §7) |
