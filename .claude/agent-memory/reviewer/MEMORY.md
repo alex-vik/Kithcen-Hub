@@ -71,3 +71,6 @@
 - `npm run perf` (vitest 5) не печатает console.log прошедших тестов в выводе — цифры видны только из отчёта исполнителя; проверяются лишь пороги. Если нужны цифры — просить вывод в файл/reporter, а не повторный прогон.
 - balance(id) кэширует любой id, в том числе несуществующий (0) — следить в API B-16/B-17: неизвестный id отклонять до кэша.
 - Расширение записи кэша (правило 4.1.8, B-08/B-10/B-11): гонять те же зонды (1) и (2).
+- T-009 CHANGES #1 (APPROVE, только тесты): «balance без refresh» убит К17-кэш.2/3 (balance() теперь первым), «знак после пересборки» убит Ш5 (обёртка listStockEvents + openSecond, fired проверяется), «MAX stock UNION state» убит С1 (5 state против 3 stock). Копия $S/c12, прогон `python3 $S/mut11.py $S/c12`: 24/29 убиты, выжили только ранее принятые эквивалентные (all no cache new, balance always compute, full build in place, max no coalesce, max=count, inTx isTransaction).
+- Цифры perf теперь в tests/perf/.out/last.json (в .gitignore) — сверять `cat`, без повторного `npm run perf`.
+- Заголовок-комментарий тест-файла (перечень критериев в строке 1) не обновляется при добавлении тестов (balances.test.ts: «Ш1–Ш4», а Ш5 добавлен) — мелочь, пожелание.
