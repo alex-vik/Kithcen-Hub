@@ -54,6 +54,7 @@ const changed = (key: keyof StockEvent): StockEvent => {
 
 describe('T-004 К31: список полей содержимого полон', () => {
   it('T-004 К31: CONTENT_KEYS экспортирован и равен полям StockEvent без seq и recordedAt', () => {
+    expect(CONTENT_KEYS, 'CONTENT_KEYS должен экспортироваться из src/domain/journal.ts').toBeDefined();
     expect([...CONTENT_KEYS].sort()).toEqual(
       (Object.keys(sample) as (keyof StockEvent)[]).filter((k) => k !== 'seq' && k !== 'recordedAt').sort(),
     );

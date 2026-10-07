@@ -44,7 +44,8 @@ export type StorageApi = {
   transaction<T>(fn: () => T): T;
 };
 
-export const open = openStorage as (o: {
+// через unknown: форму реализации задают тесты поведением, а не именами типов backend-dev
+export const open = openStorage as unknown as (o: {
   path: string;
   busyTimeoutMs: number;
   migrations?: readonly string[];
