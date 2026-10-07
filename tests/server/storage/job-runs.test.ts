@@ -1,5 +1,5 @@
 // T-010 Х1–Х2: миграция 0002 и курсор job_runs (FR-CON-08, ADR-005, инвариант 1).
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
 import { afterEach, describe, expect, it } from 'vitest';
 import { cleanup, count, mkProduct, nth, open, openFile, stock, tmpFile, T0 } from './helpers.ts';
@@ -8,6 +8,9 @@ import type { StorageApi } from './helpers.ts';
 afterEach(cleanup);
 type Jobs = StorageApi & { lastJobDay(job: string): string | undefined; markJobDay(job: string, day: string): void };
 const MIG1 = readFileSync(new URL('../../../src/server/storage/migrations/0001_init.sql', import.meta.url), 'utf8');
+const latestMigration = (): number =>
+  Math.max(...readdirSync(new URL('../../../src/server/storage/migrations/', import.meta.url))
+    .filter((f) => f.endsWith('.sql')).map((f) => Number(/^(\d+)/.exec(f)?.[1] ?? Number.NaN)));
 const userVersion = (db: DatabaseSync): number => Number((db.prepare('PRAGMA user_version').get() as { user_version: number }).user_version);
 
 describe('T-010 Х1: миграция 0002_job_runs', () => {
@@ -26,7 +29,7 @@ describe('T-010 Х1: миграция 0002_job_runs', () => {
     raw0.close();
 
     const s = open({ path, busyTimeoutMs: 5000 });
-    expect(s.pragmas().userVersion).toBe(3);
+    expect(s.pragmas().userVersion).toBe(latestMigration());
     expect({ products: s.listProducts(), events: s.listStockEvents('p1') }).toEqual(before);
     s.close();
     const raw = new DatabaseSync(path);
@@ -38,7 +41,7 @@ describe('T-010 Х1: миграция 0002_job_runs', () => {
 
   it('T-010 Х1: новая пустая БД — версия 3 (T-012) и таблица job_runs', () => {
     const { storage, raw } = openFile();
-    expect(storage.pragmas().userVersion).toBe(3);
+    expect(storage.pragmas().userVersion).toBe(latestMigration());
     expect(count(raw, 'job_runs')).toBe(0);
     storage.close();
   });

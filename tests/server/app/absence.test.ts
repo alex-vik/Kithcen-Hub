@@ -140,6 +140,7 @@ describe('T-012 О5: простой сервера во время отпуск�
 describe('T-012 О6–О8: повтор, конфликт, пересечение (BR-26, ADR-005)', () => {
   it('T-012 О6: тот же id и даты — repeat, cancelled = 0, журнал и maxStockSeq без изменений, один период', async () => {
     const s = await example3();
+    const recordedAt = s.clock.now();
     s.abs.recordAbsence(REQ);
     const n = totalEvents(s.raw);
     const seq = s.storage.maxStockSeq();
@@ -147,7 +148,7 @@ describe('T-012 О6–О8: повтор, конфликт, пересечени�
     expect(s.abs.recordAbsence(REQ)).toMatchObject({ outcome: 'repeat', cancelled: 0 });
     s.clock.set(addMinutes(s.clock.now(), 1));
     const third = s.abs.recordAbsence(REQ);
-    expect(third).toMatchObject({ outcome: 'repeat', cancelled: 0, period: { id: ID, start: '2026-10-10', end: '2026-10-13' } });
+    expect(third).toMatchObject({ outcome: 'repeat', cancelled: 0, period: { id: ID, start: '2026-10-10', end: '2026-10-13', recordedAt } });
     expect(totalEvents(s.raw)).toBe(n);
     expect(s.storage.maxStockSeq()).toBe(seq);
     expect(s.storage.listAbsencePeriods()).toHaveLength(1);
@@ -165,6 +166,16 @@ describe('T-012 О6–О8: повтор, конфликт, пересечени�
     expect(effectiveAutos(s.storage)).toContain(`P@${startOf('2026-10-14')}`);
   });
 
+  it('T-012 О7: тот же id и end, другой start — conflict (сравниваются обе даты); ничего не изменилось', async () => {
+    const s = await example3();
+    s.abs.recordAbsence(REQ);
+    const n = totalEvents(s.raw);
+    const r = s.abs.recordAbsence({ id: ID, start: '2026-10-11', end: '2026-10-13' });
+    expect(r).toMatchObject({ outcome: 'conflict', period: { id: ID, start: '2026-10-10', end: '2026-10-13' } });
+    expect(totalEvents(s.raw)).toBe(n);
+    expect(periodRows(s.raw)).toBe(1);
+  });
+
   it('T-012 О8: пересекающийся период с новым id — new, cancelled = 2 (P и Q за 10-14); у каждого автосписания периода ровно одна отмена', async () => {
     const s = await example3();
     s.abs.recordAbsence(REQ);
@@ -179,6 +190,30 @@ describe('T-012 О6–О8: повтор, конфликт, пересечени�
         expect(cs.filter((c) => c.targetId === target), `${id} ${d}`).toHaveLength(1);
       }
     }
+  });
+});
+
+describe('T-012 О8а: отменённая отмена отпуска и новый период (хвост ревью)', () => {
+  it('T-012 О8а: cancel на отмену P/10-12, затем период 10-12…10-14 — cancelled = 2 (только новые), P/10-12 остаётся действующим', async () => {
+    const s = await example3();
+    s.abs.recordAbsence(REQ);
+    const target = nth(autoOf(s.storage, 'P').filter((e) => e.occurredAt === startOf('2026-10-12')), 0).id;
+    const absCancel = nth(absCancels(s.storage, 'P').filter((c) => c.targetId === target), 0);
+    const undo = s.write.recordEvent({ id: v4(102), productId: 'P', kind: 'cancel', occurredAt: s.clock.now(), source: 'user', targetId: absCancel.id });
+    expect(undo.outcome).toBe('new');
+    const live = (d: string): boolean => {
+      const evs = s.storage.listStockEvents('P');
+      const dead = new Set(evs.filter((e) => e.kind === 'cancel').map((e) => e.targetId));
+      const a = nth(evs.filter((e) => e.kind === 'auto_writeoff' && e.occurredAt === startOf(d)), 0);
+      return !evs.some((e) => e.kind === 'cancel' && e.targetId === a.id && !dead.has(e.id));
+    };
+    expect(live('2026-10-12')).toBe(true);
+
+    const r = s.abs.recordAbsence({ id: v4(103), start: '2026-10-12', end: '2026-10-14' });
+    expect(r).toMatchObject({ outcome: 'new', cancelled: 2 });
+    expect(live('2026-10-12')).toBe(true);
+    expect(live('2026-10-14')).toBe(false);
+    expect(absCancels(s.storage, 'P').filter((c) => c.targetId === target)).toHaveLength(1);
   });
 });
 
@@ -267,18 +302,17 @@ describe('T-012 О11: атомарность — отказ пакета отм�
 });
 
 describe('T-012 О12: авто-откат SQLite внутри сценария — ошибка не перехватывается (хвост T-011 НВ-1)', () => {
-  const variants: [string, string, RegExp | undefined][] = [
+  const variants: [string, string, RegExp][] = [
     ['а: на absence_period', "CREATE TRIGGER boom BEFORE INSERT ON absence_period BEGIN SELECT RAISE(ROLLBACK, 'boom-a'); END", /boom-a/],
     ['б: на второй отмене отпуска в stock_event',
       "CREATE TRIGGER boom BEFORE INSERT ON stock_event WHEN NEW.kind = 'cancel' AND NEW.source = 'absence' " +
       "AND (SELECT COUNT(*) FROM stock_event WHERE kind = 'cancel' AND source = 'absence') >= 1 BEGIN SELECT RAISE(ROLLBACK, 'boom-b'); END",
-      undefined],
+      /boom-b/],
   ];
   it.each(variants)('T-012 О12 %s', async (_n, trigger, message) => {
     const s = await example3();
     s.raw.exec(trigger);
-    if (message === undefined) expect(() => s.abs.recordAbsence(REQ)).toThrow();
-    else expect(() => s.abs.recordAbsence(REQ)).toThrow(message);
+    expect(() => s.abs.recordAbsence(REQ)).toThrow(message);
     expect(periodRows(s.raw)).toBe(0);
     expect(allAbsCancels(s.raw)).toBe(0);
     expect(s.storage.inTransaction()).toBe(false);
