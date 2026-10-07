@@ -141,6 +141,8 @@ describe('T-005 К23: отказ без записи', () => {
     ['UUID v4 в верхнем регистре', { id: 'A0EEBC99-9C0B-4EF8-BB6D-6BB9BD380A11' }, 'id'],
     ['UUID версии 5', { id: '886313e1-3b8a-5372-9b90-0c9aee199e5d' }, 'id'],
     ['UUID версии 1', { id: '6ba7b810-9dad-11d1-80b4-00c04fd430c8' }, 'id'],
+    ['UUID v4 с вариантом c (не из 89ab)', { id: '00000000-0000-4000-c000-000000000001' }, 'id'],
+    ['UUID v4 с вариантом 7 (не из 89ab)', { id: '00000000-0000-4000-7000-000000000001' }, 'id'],
     ['пустой id', { id: '' }, 'id'],
   ];
   for (const [name, over, attribute] of cases) {
@@ -157,6 +159,14 @@ describe('T-005 К23: отказ без записи', () => {
     expect(app.recordEvent(portion(id.toUpperCase()))).toStrictEqual({ outcome: 'rejected', attribute: 'id' });
     expect(count(raw, 'stock_event')).toBe(0);
     expect(app.recordEvent(portion(id)).outcome).toBe('new');
+  });
+});
+
+describe('T-005 К23: исключение хранилища не превращается в отказ', () => {
+  it('T-005 К23: закрытая БД — recordEvent пробрасывает исключение', () => {
+    const { app, storage } = setup();
+    storage.close();
+    expect(() => app.recordEvent(portion(v4(1)))).toThrow();
   });
 });
 

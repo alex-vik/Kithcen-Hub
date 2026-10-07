@@ -109,3 +109,11 @@ describe('T-005 К28: пакет атомарен', () => {
     expect(count(raw, 'stock_event')).toBe(2);
   });
 });
+
+describe('T-005 К28: исключение хранилища не превращается в отказ', () => {
+  it('T-005 К28: закрытая БД — recordSystemBatch пробрасывает исключение', () => {
+    const { app, storage } = setup();
+    storage.close();
+    expect(() => app.recordSystemBatch([auto(K1)])).toThrow();
+  });
+});
