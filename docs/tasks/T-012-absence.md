@@ -2,7 +2,7 @@
 
 | Поле | Значение |
 | --- | --- |
-| Статус | ready |
+| Статус | impl |
 | Исполнитель | tester: `tests/`; backend-dev: `src/domain/`, `src/server/storage/`, `src/server/app/` |
 | Покрывает | FR-ABS-01, FR-ABS-02, FR-ABS-03 (часть «автосписания не выполняются»), FR-ABS-04; затрагивает BR-02, BR-26, BR-27, BR-15, NFR-07, NFR-14, NFR-16 |
 | Зависит от | T-002/T-003 (`stockBalance`, `stockLedger`, `cancelledIds`, отмена), T-004 (`openStorage`, миграции), T-005 (`recordSystemBatch`, `derivedId`), T-009 (`createBalanceCache`), T-010 (`autoWriteoffsForDay`, `runPending`, `time.ts`), T-011 (SAVEPOINT) — все done |
