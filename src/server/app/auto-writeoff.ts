@@ -26,8 +26,9 @@ export function createAutoWriteoff(deps: { storage: Storage; clock: Clock; param
       const processed: LocalDate[] = [];
       for (const day of pendingDays(cursor, now, params)) {
         storage.transaction(() => {
+          const absences = storage.listAbsencePeriods(); // T-012, FR-ABS-03: сутки отпуска — без событий, но отмечаются
           const entries = storage.listProducts().map((product) => ({ product, stateEvents: storage.listStateEvents(product.id) }));
-          const items = autoWriteoffsForDay(day, entries, params).map((a) => ({
+          const items = autoWriteoffsForDay(day, entries, params, absences).map((a) => ({
             productId: a.productId, kind: 'auto_writeoff' as const, source: 'auto_writeoff', quantity: a.quantity,
             key: a.key, occurredAt: a.occurredAt,
           }));

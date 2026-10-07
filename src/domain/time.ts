@@ -92,3 +92,11 @@ export function pendingDays(
   }
   return out;
 }
+
+/** T-012, FR-ABS-01: `YYYY-MM-DD` с существующей датой. */
+export function isLocalDate(v: unknown): v is LocalDate {
+  if (typeof v !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(v)) return false;
+  const [y = 0, m = 0, d = 0] = v.split('-').map(Number);
+  const t = new Date(Date.UTC(y, m - 1, d));
+  return t.getUTCFullYear() === y && t.getUTCMonth() === m - 1 && t.getUTCDate() === d;
+}

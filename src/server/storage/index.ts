@@ -6,6 +6,7 @@ import type { SQLInputValue } from 'node:sqlite';
 import type { Product, StateEvent } from '../../domain/catalog.ts';
 import type { StockEvent } from '../../domain/journal.ts';
 import { isInstant } from '../../domain/time.ts';
+import type { AbsencePeriod } from '../../domain/absence.ts';
 import type { LocalDate } from '../../domain/time.ts';
 
 export type WriteResult<E> =
@@ -53,11 +54,15 @@ export type Storage = {
   lastJobDay(job: string): LocalDate | undefined;
   /** T-010: отмечает сутки задачи; повтор той же пары не ошибка. */
   markJobDay(job: string, day: LocalDate): void;
+  /** T-012, FR-ABS-01: период с этим id уже есть — возвращается записанный, ничего не перезаписывается. */
+  addAbsencePeriod(p: AbsencePeriod): { status: 'added' | 'exists'; period: AbsencePeriod };
+  /** T-012: все периоды по (start_day, id). */
+  listAbsencePeriods(): AbsencePeriod[];
   /**
    * Несколько чтений и вставок атомарно; вложенный вызов входит во внешнюю транзакцию через SAVEPOINT (T-011).
    * Вложенный вызов атомарен сам по себе: перехваченное во внешнем fn исключение откатывает только записи вложенного вызова,
    * внешняя транзакция продолжается. Неперехваченное исключение доходит до внешнего вызова и откатывает всю транзакцию.
-   * Всё или ничего: исключение из fn откатывает транзакцию (или точку сохранения) и пробрасывается тот же объектом.
+   * Всё или ничего: исключение из fn откатывает транзакцию (или точку сохранения) и пробрасывается тот же объект.
    * Исключение: если SQLite сам откатил всю транзакцию (FULL/IOERR/NOMEM), ROLLBACK TO пропускается; ошибки хранилища
    * во внешнем fn перехватывать нельзя — дальнейшие записи уйдут в автокоммит (НВ-1, вне T-011).
    * fn только синхронный: драйвер синхронный, async-функция завершилась бы после COMMIT (тип запрещает Promise).
@@ -136,6 +141,13 @@ const toState = (r: Row): StateEvent => ({
   ...opt('refEventId', r['ref_event_id']),
 });
 
+const toAbsence = (r: Row): AbsencePeriod => ({
+  id: r['id'] as string,
+  start: r['start_day'] as string,
+  end: r['end_day'] as string,
+  recordedAt: r['recorded_at'] as string,
+});
+
 const n = (v: number | undefined): number | null => v ?? null;
 
 export function openStorage(options: StorageOptions): Storage {
@@ -194,6 +206,10 @@ export function openStorage(options: StorageOptions): Storage {
     }
   }
 
+  const getAbsence = (id: string): AbsencePeriod | undefined => {
+    const r = get('SELECT * FROM absence_period WHERE id = ?', id);
+    return r && toAbsence(r);
+  };
   const productExists = (id: string): boolean => get('SELECT 1 AS x FROM product WHERE id = ?', id) !== undefined;
   const getStockEvent = (id: string): StockEvent | undefined => {
     const r = get('SELECT * FROM stock_event WHERE id = ?', id);
@@ -292,6 +308,16 @@ export function openStorage(options: StorageOptions): Storage {
     markJobDay: (job, day) => {
       db.prepare('INSERT INTO job_runs (job, day) VALUES (?, ?) ON CONFLICT DO NOTHING').run(job, day);
     },
+    addAbsencePeriod: (p) =>
+      transaction((): { status: 'added' | 'exists'; period: AbsencePeriod } => {
+        const recorded = getAbsence(p.id);
+        if (recorded) return { status: 'exists', period: recorded };
+        db.prepare('INSERT INTO absence_period (id, start_day, end_day, recorded_at) VALUES (?, ?, ?, ?)').run(
+          p.id, p.start, p.end, p.recordedAt,
+        );
+        return { status: 'added', period: getAbsence(p.id) as AbsencePeriod };
+      }),
+    listAbsencePeriods: () => all('SELECT * FROM absence_period ORDER BY start_day, id').map(toAbsence),
     inTransaction: () => depth > 0,
     transaction,
   };
